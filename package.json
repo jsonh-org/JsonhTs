@@ -1,0 +1,31 @@
+{
+  "name": "jsonh-js",
+  "version": "1.0.0",
+  "description": "JSON for Humans in JavaScript.",
+  "main": "jsonh-js/index.js",
+  "scripts": {
+    "test": "node jsonh-js-tests/tests.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsonh-org/JsonhJs.git"
+  },
+  "keywords": [
+    "JSONH",
+    "JSON",
+    "for",
+    "Humans",
+    "JSON",
+    "JSON5",
+    "HJSON",
+    "config",
+    "parser"
+  ],
+  "author": "Joyless",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jsonh-org/JsonhJs/issues"
+  },
+  "homepage": "https://github.com/jsonh-org/JsonhJs#readme",
+  "type": "module"
+}
