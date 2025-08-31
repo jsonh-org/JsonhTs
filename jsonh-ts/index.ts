@@ -1,5 +1,3 @@
-function helloWorld() {
-  return "hello world"
-}
+import { JsonhReader } from "./jsonh-reader"
 
-export default helloWorld
+export { JsonhReader };

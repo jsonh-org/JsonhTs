@@ -1,3 +1,4 @@
-import helloWorld from "../jsonh-ts/index.js"
+import { JsonhReader } from "../jsonh-ts/index.js"
 
-console.log(helloWorld())
+console.log(new JsonhReader("").index);
+
