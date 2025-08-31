@@ -1,3 +1,3 @@
-import { JsonhReader } from "./jsonh-reader"
+import { JsonhReader } from "./jsonh-reader.js"
 
 export { JsonhReader };

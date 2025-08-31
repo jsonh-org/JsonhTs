@@ -1,4 +1,7 @@
-import { JsonhVersion } from "./jsonh-version";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.JsonhReaderOptions = void 0;
+const jsonh_version_js_1 = require("./jsonh-version.js");
 /**
  * Options for a JsonhReader.
  */
@@ -6,7 +9,7 @@ class JsonhReaderOptions {
     /**
      * Specifies the major version of the JSONH specification to use.
      */
-    version = JsonhVersion.Latest;
+    version = jsonh_version_js_1.JsonhVersion.Latest;
     /**
      * Enables/disables parsing unclosed inputs.
      *
@@ -21,5 +24,5 @@ class JsonhReaderOptions {
      */
     incompleteInputs = false;
 }
-export { JsonhReaderOptions };
+exports.JsonhReaderOptions = JsonhReaderOptions;
 //# sourceMappingURL=jsonh-reader-options.js.map

@@ -1,4 +1,4 @@
-import { JsonhReaderOptions } from "./jsonh-reader-options";
+import { JsonhReaderOptions } from "./jsonh-reader-options.js";
 /**
  * A reader that reads JSONH tokens from a string.
  */

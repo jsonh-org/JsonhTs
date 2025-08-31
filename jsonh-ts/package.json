@@ -2,6 +2,7 @@
   "name": "jsonh-ts",
   "version": "1.0.0",
   "description": "JSON for Humans in JavaScript.",
+  "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -26,6 +27,5 @@
   "bugs": {
     "url": "https://github.com/jsonh-org/JsonhTs/issues"
   },
-  "homepage": "https://github.com/jsonh-org/JsonhTs#readme",
-  "type": "module"
+  "homepage": "https://github.com/jsonh-org/JsonhTs#readme"
 }

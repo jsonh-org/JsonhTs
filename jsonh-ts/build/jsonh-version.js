@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.JsonhVersion = void 0;
 /**
  * The major versions of the JSONH specification.
  */
@@ -11,6 +14,5 @@ var JsonhVersion;
      * Version 1 of the specification, released 2025/03/19.
      */
     JsonhVersion[JsonhVersion["V1"] = 1] = "V1";
-})(JsonhVersion || (JsonhVersion = {}));
-export { JsonhVersion };
+})(JsonhVersion || (exports.JsonhVersion = JsonhVersion = {}));
 //# sourceMappingURL=jsonh-version.js.map

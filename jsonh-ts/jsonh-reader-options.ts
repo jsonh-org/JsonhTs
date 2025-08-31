@@ -1,4 +1,4 @@
-import { JsonhVersion } from "./jsonh-version"
+import { JsonhVersion } from "./jsonh-version.js"
 
 /**
  * Options for a JsonhReader.
