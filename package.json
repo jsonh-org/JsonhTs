@@ -1,14 +1,14 @@
 {
-  "name": "jsonh-js",
+  "name": "jsonh-ts",
   "version": "1.0.0",
   "description": "JSON for Humans in JavaScript.",
-  "main": "jsonh-js/index.js",
+  "main": "jsonh-ts/index.ts",
   "scripts": {
-    "test": "node jsonh-js-tests/tests.js"
+    "test": "tsx jsonh-ts-tests/tests.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jsonh-org/JsonhJs.git"
+    "url": "git+https://github.com/jsonh-org/JsonhTs.git"
   },
   "keywords": [
     "JSONH",
@@ -24,8 +24,8 @@
   "author": "Joyless",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jsonh-org/JsonhJs/issues"
+    "url": "https://github.com/jsonh-org/JsonhTs/issues"
   },
-  "homepage": "https://github.com/jsonh-org/JsonhJs#readme",
+  "homepage": "https://github.com/jsonh-org/JsonhTs#readme",
   "type": "module"
 }
