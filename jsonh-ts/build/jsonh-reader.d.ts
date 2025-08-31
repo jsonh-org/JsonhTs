@@ -1,4 +1,4 @@
-import { JsonhReaderOptions } from "./jsonh-reader-options.js";
+import JsonhReaderOptions = require("./jsonh-reader-options.js");
 /**
  * A reader that reads JSONH tokens from a string.
  */
@@ -25,5 +25,5 @@ declare class JsonhReader {
      */
     constructor(string: string, options?: JsonhReaderOptions);
 }
-export { JsonhReader };
+export = JsonhReader;
 //# sourceMappingURL=jsonh-reader.d.ts.map

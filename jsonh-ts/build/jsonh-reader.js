@@ -1,7 +1,5 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.JsonhReader = void 0;
-const jsonh_reader_options_js_1 = require("./jsonh-reader-options.js");
+const JsonhReaderOptions = require("./jsonh-reader-options.js");
 /**
  * A reader that reads JSONH tokens from a string.
  */
@@ -49,7 +47,7 @@ class JsonhReader {
     /**
      * Constructs a reader that reads JSONH from a string.
      */
-    constructor(string, options = new jsonh_reader_options_js_1.JsonhReaderOptions()) {
+    constructor(string, options = new JsonhReaderOptions()) {
         this.#string = string;
         this.#index = 0;
         this.#options = options;
@@ -89,5 +87,5 @@ class JsonhReader {
         return next;
     }
 }
-exports.JsonhReader = JsonhReader;
+module.exports = JsonhReader;
 //# sourceMappingURL=jsonh-reader.js.map

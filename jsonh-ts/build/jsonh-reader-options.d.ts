@@ -1,4 +1,4 @@
-import { JsonhVersion } from "./jsonh-version.js";
+import JsonhVersion = require("./jsonh-version.js");
 /**
  * Options for a JsonhReader.
  */
@@ -21,5 +21,5 @@ declare class JsonhReaderOptions {
      */
     incompleteInputs: boolean;
 }
-export { JsonhReaderOptions };
+export = JsonhReaderOptions;
 //# sourceMappingURL=jsonh-reader-options.d.ts.map

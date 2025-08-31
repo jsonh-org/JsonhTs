@@ -1,3 +1,3 @@
-import { JsonhReader } from "./jsonh-reader.js"
+import JsonhReader = require("./jsonh-reader.js");
 
-export { JsonhReader };
+export = JsonhReader;

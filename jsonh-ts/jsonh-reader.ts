@@ -1,4 +1,4 @@
-import { JsonhReaderOptions } from "./jsonh-reader-options.js";
+import JsonhReaderOptions = require("./jsonh-reader-options.js");
 
 /**
  * A reader that reads JSONH tokens from a string.
@@ -90,4 +90,4 @@ class JsonhReader {
     }
 }
 
-export { JsonhReader };
+export = JsonhReader;

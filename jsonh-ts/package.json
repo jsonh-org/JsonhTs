@@ -2,7 +2,7 @@
   "name": "jsonh-ts",
   "version": "1.0.0",
   "description": "JSON for Humans in JavaScript.",
-  "type": "module",
+  "type": "commonjs",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {

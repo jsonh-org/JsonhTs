@@ -12,4 +12,4 @@ enum JsonhVersion {
     V1 = 1,
 }
 
-export { JsonhVersion };
+export = JsonhVersion;
