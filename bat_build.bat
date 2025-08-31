@@ -3,6 +3,6 @@ if not defined in_subprocess (cmd /k set in_subprocess=y ^& %0 %*) & exit
 :: Clear screen
 cls
 
-:: Test
+:: Build
 cd jsonh-ts
-npm test
+npm run build
