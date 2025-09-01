@@ -1,28 +1,20 @@
 import JsonhReaderOptions = require("./jsonh-reader-options.js");
+import TextReader = require("./text-reader.js");
+import StringTextReader = require("./string-text-reader.js");
 
 /**
  * A reader that reads JSONH tokens from a string.
  */
 class JsonhReader {
     /**
-     * The string to read characters from.
+     * The text reader to read characters from.
      */
-    #string: string;
+    #textReader: TextReader;
     /**
-     * The string to read characters from.
+     * The text reader to read characters from.
      */
-    get string(): string {
-        return this.#string;
-    }
-    /**
-     * The index in the string to read characters from.
-     */
-    #index: number;
-    /**
-     * The index in the string to read characters from.
-     */
-    get index(): number {
-        return this.#index;
+    get textReader(): TextReader {
+        return this.#textReader;
     }
     /**
      * The options to use when reading JSONH.
@@ -46,27 +38,55 @@ class JsonhReader {
     }
 
     /**
-     * Constructs a reader that reads JSONH from a string.
+     * Constructs a reader that reads JSONH from a text reader.
      */
-    constructor(string: string, options: JsonhReaderOptions = new JsonhReaderOptions()) {
-        this.#string = string;
-        this.#index = 0;
+    constructor(textReader: TextReader, options: JsonhReaderOptions = new JsonhReaderOptions()) {
+        this.#textReader = textReader;
         this.#options = options;
         this.#charCounter = 0;
     }
+    /**
+     * Constructs a reader that reads JSONH from a string.
+     */
+    static fromString(string: string, options: JsonhReaderOptions = new JsonhReaderOptions()) : JsonhReader {
+        return new JsonhReader(new StringTextReader(string), options);
+    }
+
+    /**
+     * Parses a single element from a text reader.
+     */
+    static parseElementfromReader(textReader: TextReader) : object {
+        return new JsonhReader(textReader).parseElement();
+    }
+    /**
+     * Parses a single element from a string.
+     */
+    static parseElementFromString(string: string) : object {
+        return this.fromString(string).parseElement();
+    }
+
+    /**
+     * Parses a single element from the reader.
+     */
+    parseElement() : any {
+        // TODO
+        return {};
+    }
 
     #peek(): string | null {
-        if (this.index >= this.string.length) {
+        let next: string | null = this.#textReader.peek();
+        if (next === null) {
             return null;
         }
-        return this.string.charAt(this.index);
+        return next;
     }
     #read(): string | null {
-        if (this.index + 1 >= this.string.length) {
+        let next: string | null = this.#textReader.read();
+        if (next === null) {
             return null;
         }
-        this.#index++;
-        return this.string.charAt(this.index);
+        this.#charCounter++;
+        return next;
     }
     #readOne(option: string): boolean {
         if (this.#peek() == option) {
