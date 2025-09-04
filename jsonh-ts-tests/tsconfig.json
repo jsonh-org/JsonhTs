@@ -2,6 +2,6 @@
     "compilerOptions": {
         "target": "es2024",
         "lib": ["ES2024", "DOM"],
-        "allowSyntheticDefaultImports": true
-    }
+        "allowSyntheticDefaultImports": true,
+    },
 }
