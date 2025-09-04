@@ -10,11 +10,11 @@ abstract class TextReader {
     /**
      * Returns whether the text reader is finished reading characters.
      */
-    abstract done() : boolean;
+    abstract done(): boolean;
     /**
      * Returns all of the remaining characters.
      */
-    readToEnd() : string {
+    readToEnd(): string {
         let result: string = "";
         while (true) {
             let next: string | null = this.peek();

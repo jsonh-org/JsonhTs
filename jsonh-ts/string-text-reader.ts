@@ -21,7 +21,7 @@ class StringTextReader implements TextReader {
         }
         return this.#string.charAt(this.#index);
     }
-    done() : boolean {
+    done(): boolean {
         return this.#index >= this.#string.length;
     }
     readToEnd(): string {
