@@ -1,0 +1,1 @@
+{"version":3,"file":"jsonh-token.d.ts","sourceRoot":"","sources":["../jsonh-token.ts"],"names":[],"mappings":"AAAA,OAAO,aAAa,GAAG,QAAQ,mBAAmB,CAAC,CAAC;AAEpD;;GAEG;AACH,cAAM,UAAU;;IAKZ;;OAEG;IACH,IAAI,QAAQ,IAAI,aAAa,CAE5B;IAKD;;OAEG;IACH,IAAI,KAAK,IAAI,MAAM,CAElB;IAED;;OAEG;gBACS,QAAQ,EAAE,aAAa,EAAE,KAAK,EAAE,MAAM;CAIrD;AAED,SAAS,UAAU,CAAC"}

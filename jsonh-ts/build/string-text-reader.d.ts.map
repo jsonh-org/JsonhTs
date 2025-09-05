@@ -1,0 +1,1 @@
+{"version":3,"file":"string-text-reader.d.ts","sourceRoot":"","sources":["../string-text-reader.ts"],"names":[],"mappings":"AAAA,OAAO,UAAU,GAAG,QAAQ,kBAAkB,CAAC,CAAC;AAEhD,cAAM,gBAAiB,YAAW,UAAU;;gBAI5B,MAAM,EAAE,MAAM;IAK1B,IAAI,IAAI,MAAM,GAAG,IAAI;IAMrB,IAAI,IAAI,MAAM,GAAG,IAAI;IAMrB,IAAI,IAAI,OAAO;IAGf,SAAS,IAAI,MAAM;CAKtB;AAED,SAAS,gBAAgB,CAAC"}
