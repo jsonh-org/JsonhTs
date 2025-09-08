@@ -28,7 +28,7 @@ class JsonhToken {
     /**
      * Constructs a single JSONH token.
      */
-    constructor(jsonType: JsonTokenType, value: string) {
+    constructor(jsonType: JsonTokenType, value: string = "") {
         this.#jsonType = jsonType;
         this.#value = value;
     }
