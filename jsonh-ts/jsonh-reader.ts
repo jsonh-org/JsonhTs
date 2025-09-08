@@ -93,7 +93,7 @@ class JsonhReader {
 
         let submitNode = function(node: unknown): boolean {
             // Root value
-            if (node === null) {
+            if (currentNodes.length === 0) {
                 return true;
             }
             // Array item
