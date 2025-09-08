@@ -13,13 +13,13 @@ class StringTextReader implements TextReader {
         if (this.#index >= this.#string.length) {
             return null;
         }
-        return this.#string.charAt(this.#index++);
+        return this.#string.at(this.#index++)!;
     }
     peek(): string | null {
         if (this.#index >= this.#string.length) {
             return null;
         }
-        return this.#string.charAt(this.#index);
+        return this.#string.at(this.#index)!;
     }
     done(): boolean {
         return this.#index >= this.#string.length;
