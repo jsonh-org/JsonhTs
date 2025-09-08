@@ -387,7 +387,41 @@ class JsonhReader {
         }
     }
     *#readBracelessObject(propertyNameTokens = null) {
-        throw new Error("TODO" + propertyNameTokens);
+        // Start of object
+        yield new JsonhToken(JsonTokenType.StartObject);
+        // Initial tokens
+        if (propertyNameTokens !== null) {
+            for (let initialToken of this.#readProperty(propertyNameTokens)) {
+                if (initialToken instanceof Error) {
+                    yield initialToken;
+                    return;
+                }
+                yield initialToken;
+            }
+        }
+        while (true) {
+            // Comments & whitespace
+            for (let token of this.#readCommentsAndWhitespace()) {
+                if (token instanceof Error) {
+                    yield token;
+                    return;
+                }
+                yield token;
+            }
+            if (this.#peek() === null) {
+                // End of braceless object
+                yield new JsonhToken(JsonTokenType.EndObject);
+                return;
+            }
+            // Property
+            for (let token of this.#readProperty()) {
+                if (token instanceof Error) {
+                    yield token;
+                    return;
+                }
+                yield token;
+            }
+        }
     }
     *#readProperty(propertyNameTokens = null) {
         // Property name
