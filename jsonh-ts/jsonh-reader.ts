@@ -3,6 +3,7 @@ import TextReader = require("./text-reader.js");
 import StringTextReader = require("./string-text-reader.js");
 import JsonhToken = require("./jsonh-token.js");
 import JsonTokenType = require("./json-token-type.js");
+import JsonhNumberParser = require("./jsonh-number-parser.js")
 
 /**
  * A reader that reads JSONH tokens from a string.
@@ -155,8 +156,11 @@ class JsonhReader {
                 // Number
                 case JsonTokenType.Number: {
                     // TODO
-                    let node: number = 1337;
-                    //let node: number = tokenResult.value;
+                    let result: number | Error = JsonhNumberParser.parse(tokenResult.value);
+                    if (result instanceof Error) {
+                        return result;
+                    }
+                    let node: number = result;
                     if (submitNode(node)) {
                         return node as T;
                     }
@@ -955,7 +959,7 @@ class JsonhReader {
         }
 
         // Ensure at least one digit
-        if (!JsonhReader.#anyChar(numberBuilder, (char: string) => char === '.' || char === '-' || char === '+' || char === '_')) {
+        if (!JsonhReader.#containsAnyExcept(numberBuilder, ['.', '-', '+', '_'])) {
             return { result: new Error("Number must have at least one digit"), numberNoExponent: numberBuilder };
         }
 
@@ -1250,9 +1254,9 @@ class JsonhReader {
 
         return input.slice(start, end);
     }
-    static #anyChar(input: string, predicate: (char: string) => boolean): boolean {
+    static #containsAnyExcept(input: string, allowed: ReadonlyArray<string>): boolean {
         for (let char of input) {
-            if (predicate(char)) {
+            if (!allowed.includes(char)) {
                 return true;
             }
         }
