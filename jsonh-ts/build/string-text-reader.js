@@ -1,9 +1,10 @@
 "use strict";
 const TextReader = require("./text-reader.js");
-class StringTextReader {
+class StringTextReader extends TextReader {
     #string;
     #index;
     constructor(string) {
+        super();
         this.#string = string;
         this.#index = 0;
     }
@@ -11,13 +12,13 @@ class StringTextReader {
         if (this.#index >= this.#string.length) {
             return null;
         }
-        return this.#string.charAt(this.#index++);
+        return this.#string.at(this.#index++);
     }
     peek() {
         if (this.#index >= this.#string.length) {
             return null;
         }
-        return this.#string.charAt(this.#index);
+        return this.#string.at(this.#index);
     }
     done() {
         return this.#index >= this.#string.length;

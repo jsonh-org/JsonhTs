@@ -5,6 +5,7 @@ const TextReader = require("./text-reader.js");
 const StringTextReader = require("./string-text-reader.js");
 const JsonhToken = require("./jsonh-token.js");
 const JsonTokenType = require("./json-token-type.js");
+const JsonhNumberParser = require("./jsonh-number-parser.js");
 /**
  * A reader that reads JSONH tokens from a string.
  */
@@ -59,6 +60,9 @@ class JsonhReader {
      * Constructs a reader that reads JSONH from a text reader.
      */
     constructor(textReader, options = new JsonhReaderOptions()) {
+        if (typeof textReader === "string") {
+            throw new Error("Do not pass a string to new JsonhReader(). Use JsonhReader.fromString().");
+        }
         this.#textReader = textReader;
         this.#options = options;
         this.#charCounter = 0;
@@ -89,7 +93,7 @@ class JsonhReader {
         let currentPropertyName = null;
         let submitNode = function (node) {
             // Root value
-            if (node === null) {
+            if (currentNodes.length === 0) {
                 return true;
             }
             // Array item
@@ -149,8 +153,11 @@ class JsonhReader {
                 // Number
                 case JsonTokenType.Number: {
                     // TODO
-                    let node = 1337;
-                    //let node: number = tokenResult.value;
+                    let result = JsonhNumberParser.parse(tokenResult.value);
+                    if (result instanceof Error) {
+                        return result;
+                    }
+                    let node = result;
                     if (submitNode(node)) {
                         return node;
                     }
@@ -236,7 +243,7 @@ class JsonhReader {
                 }
                 // Property name
                 case JsonTokenType.PropertyName: {
-                    if (currentDepth == 1 && tokenResult.value == propertyName) {
+                    if (currentDepth === 1 && tokenResult.value === propertyName) {
                         // Path found
                         return true;
                     }
@@ -266,7 +273,7 @@ class JsonhReader {
             return;
         }
         // Object
-        if (next == '{') {
+        if (next === '{') {
             for (let token of this.#readObject()) {
                 if (token instanceof Error) {
                     yield token;
@@ -276,7 +283,7 @@ class JsonhReader {
             }
         }
         // Array
-        else if (next == '[') {
+        else if (next === '[') {
             for (let token of this.#readArray()) {
                 if (token instanceof Error) {
                     yield token;
@@ -293,7 +300,7 @@ class JsonhReader {
                 return;
             }
             // Detect braceless object from property name
-            if (token.jsonType == JsonTokenType.String) {
+            if (token.jsonType === JsonTokenType.String) {
                 // Try read property name
                 let propertyNameTokens = [];
                 for (let propertyNameToken of this.#readPropertyName(token.value)) {
@@ -326,19 +333,606 @@ class JsonhReader {
         }
     }
     *#readObject() {
-        throw new Error("TODO");
+        // Opening brace
+        if (!this.#readOne('{')) {
+            // Braceless object
+            for (let token of this.#readBracelessObject()) {
+                if (token instanceof Error) {
+                    yield token;
+                    return;
+                }
+                yield token;
+            }
+            return;
+        }
+        // Start object
+        yield new JsonhToken(JsonTokenType.StartObject);
+        while (true) {
+            // Comments & whitespace
+            for (let token of this.#readCommentsAndWhitespace()) {
+                if (token instanceof Error) {
+                    yield token;
+                    return;
+                }
+                yield token;
+            }
+            let next = this.#peek();
+            if (next === null) {
+                // End of incomplete object
+                if (this.#options.incompleteInputs) {
+                    yield new JsonhToken(JsonTokenType.EndObject);
+                    return;
+                }
+                // Missing closing brace
+                yield new Error("Expected `}` to end object, got end of input");
+                return;
+            }
+            // Closing brace
+            if (next === '}') {
+                // End of object
+                this.#read();
+                yield new JsonhToken(JsonTokenType.EndObject);
+                return;
+            }
+            // Property
+            else {
+                for (let token of this.#readProperty()) {
+                    if (token instanceof Error) {
+                        yield token;
+                        return;
+                    }
+                    yield token;
+                }
+            }
+        }
     }
     *#readBracelessObject(propertyNameTokens = null) {
         throw new Error("TODO" + propertyNameTokens);
     }
-    *#readArray() {
-        throw new Error("TODO");
+    *#readProperty(propertyNameTokens = null) {
+        // Property name
+        if (propertyNameTokens !== null) {
+            for (let token of propertyNameTokens) {
+                yield token;
+            }
+        }
+        else {
+            for (let token of this.#readPropertyName()) {
+                if (token instanceof Error) {
+                    yield token;
+                    return;
+                }
+                yield token;
+            }
+        }
+        // Comments & whitespace
+        for (let token of this.#readCommentsAndWhitespace()) {
+            if (token instanceof Error) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+        // Property value
+        for (let token of this.readElement()) {
+            if (token instanceof Error) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+        // Comments & whitespace
+        for (let token of this.#readCommentsAndWhitespace()) {
+            if (token instanceof Error) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+        // Optional comma
+        this.#readOne(',');
     }
-    *#readPropertyName(string) {
-        throw new Error("TODO" + string);
+    *#readPropertyName(string = null) {
+        // String
+        if (string === null) {
+            let stringToken = this.#readString();
+            if (stringToken instanceof Error) {
+                yield stringToken;
+                return;
+            }
+            string = stringToken.value;
+        }
+        // Comments & whitespace
+        for (let token of this.#readCommentsAndWhitespace()) {
+            if (token instanceof Error) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+        // Colon
+        if (!this.#readOne(':')) {
+            yield new Error("Expected `:` after property name in object");
+            return;
+        }
+        // End of property name
+        yield new JsonhToken(JsonTokenType.PropertyName, string);
+    }
+    *#readArray() {
+        // Opening bracket
+        if (!this.#readOne('[')) {
+            yield new Error("Expected `[` to start array");
+            return;
+        }
+        // Start of array
+        yield new JsonhToken(JsonTokenType.StartArray);
+        while (true) {
+            // Comments & whitespace
+            for (let token of this.#readCommentsAndWhitespace()) {
+                if (token instanceof Error) {
+                    yield token;
+                    return;
+                }
+                yield token;
+            }
+            let next = this.#peek();
+            if (next === null) {
+                // End of incomplete array
+                if (this.#options.incompleteInputs) {
+                    yield new JsonhToken(JsonTokenType.EndArray);
+                    return;
+                }
+                // Missing closing bracket
+                yield new Error("Expected `]` to end array, got end of input");
+                return;
+            }
+            // Closing bracket
+            if (next === ']') {
+                // End of array
+                this.#read();
+                yield new JsonhToken(JsonTokenType.EndArray);
+                return;
+            }
+            // Item
+            else {
+                for (let token of this.#readItem()) {
+                    if (token instanceof Error) {
+                        yield token;
+                        return;
+                    }
+                    yield token;
+                }
+            }
+        }
+    }
+    *#readItem() {
+        // Element
+        for (let token of this.readElement()) {
+            if (token instanceof Error) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+        // Comments & whitespace
+        for (let token of this.#readCommentsAndWhitespace()) {
+            if (token instanceof Error) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+        // Optional comma
+        this.#readOne(',');
+    }
+    #readString() {
+        // Start quote
+        let startQuote = this.#readAny('"', '\'');
+        if (startQuote === null) {
+            return this.#readQuotelessString();
+        }
+        // Count multiple start quotes
+        let startQuoteCounter = 1;
+        while (this.#readOne(startQuote)) {
+            startQuoteCounter++;
+        }
+        // Empty string
+        if (startQuoteCounter === 2) {
+            return new JsonhToken(JsonTokenType.String, "");
+        }
+        // Count multiple end quotes
+        let endQuoteCounter = 0;
+        // Read string
+        let stringBuilder = "";
+        while (true) {
+            let next = this.#read();
+            if (next === null) {
+                return new Error("Expected end of string, got end of input");
+            }
+            // Partial end quote was actually part of string
+            if (next !== startQuote) {
+                stringBuilder += startQuote.repeat(endQuoteCounter);
+                endQuoteCounter = 0;
+            }
+            // End quote
+            if (next === startQuote) {
+                endQuoteCounter++;
+                if (endQuoteCounter === startQuoteCounter) {
+                    break;
+                }
+            }
+            // Escape sequence
+            else if (next === '\\') {
+                let escapeSequenceResult = this.#readEscapeSequence();
+                if (escapeSequenceResult instanceof Error) {
+                    return escapeSequenceResult;
+                }
+                stringBuilder += escapeSequenceResult;
+            }
+            // Literal character
+            else {
+                stringBuilder += next;
+            }
+        }
+        // Condition: skip remaining steps unless started with multiple quotes
+        if (startQuoteCounter > 1) {
+            // Pass 1: count leading whitespace -> newline
+            let hasLeadingWhitespaceNewline = false;
+            let leadingWhitespaceNewlineCounter = 0;
+            for (let index = 0; index < stringBuilder.length; index++) {
+                let next = stringBuilder.at(index);
+                // Newline
+                if (_a.#newlineChars.includes(next)) {
+                    // Join CR LF
+                    if (next === '\r' && index + 1 < stringBuilder.length && stringBuilder[index + 1] === '\n') {
+                        index++;
+                    }
+                    hasLeadingWhitespaceNewline = true;
+                    leadingWhitespaceNewlineCounter = index + 1;
+                    break;
+                }
+                // Non-whitespace
+                else if (!_a.#whitespaceChars.includes(next)) {
+                    break;
+                }
+            }
+            // Condition: skip remaining steps if pass 1 failed
+            if (hasLeadingWhitespaceNewline) {
+                // Pass 2: count trailing newline -> whitespace
+                let hasTrailingNewlineWhitespace = false;
+                let lastNewlineIndex = 0;
+                let trailingWhitespaceCounter = 0;
+                for (let index = 0; index < stringBuilder.length; index++) {
+                    let next = stringBuilder.at(index);
+                    // Newline
+                    if (_a.#newlineChars.includes(next)) {
+                        hasTrailingNewlineWhitespace = true;
+                        lastNewlineIndex = index;
+                        trailingWhitespaceCounter = 0;
+                        // Join CR LF
+                        if (next === '\r' && index + 1 < stringBuilder.length && stringBuilder[index + 1] === '\n') {
+                            index++;
+                        }
+                    }
+                    // Whitespace
+                    else if (_a.#whitespaceChars.includes(next)) {
+                        trailingWhitespaceCounter++;
+                    }
+                    // Non-whitespace
+                    else {
+                        hasTrailingNewlineWhitespace = false;
+                        trailingWhitespaceCounter = 0;
+                    }
+                }
+                // Condition: skip remaining steps if pass 2 failed
+                if (hasTrailingNewlineWhitespace) {
+                    // Pass 3: strip trailing newline -> whitespace
+                    stringBuilder = _a.#removeRange(stringBuilder, lastNewlineIndex, stringBuilder.length - lastNewlineIndex);
+                    // Pass 4: strip leading whitespace -> newline
+                    stringBuilder = _a.#removeRange(stringBuilder, 0, leadingWhitespaceNewlineCounter);
+                    // Condition: skip remaining steps if no trailing whitespace
+                    if (trailingWhitespaceCounter > 0) {
+                        // Pass 5: strip line-leading whitespace
+                        let isLineLeadingWhitespace = true;
+                        let lineLeadingWhitespaceCounter = 0;
+                        for (let index = 0; index < stringBuilder.length; index++) {
+                            let next = stringBuilder.at(index);
+                            // Newline
+                            if (_a.#newlineChars.includes(next)) {
+                                isLineLeadingWhitespace = true;
+                                lineLeadingWhitespaceCounter = 0;
+                            }
+                            // Whitespace
+                            else if (_a.#whitespaceChars.includes(next)) {
+                                if (isLineLeadingWhitespace) {
+                                    // Increment line-leading whitespace
+                                    lineLeadingWhitespaceCounter++;
+                                    // Maximum line-leading whitespace reached
+                                    if (lineLeadingWhitespaceCounter === trailingWhitespaceCounter) {
+                                        // Remove line-leading whitespace
+                                        stringBuilder = _a.#removeRange(stringBuilder, index + 1 - lineLeadingWhitespaceCounter, lineLeadingWhitespaceCounter);
+                                        index -= lineLeadingWhitespaceCounter;
+                                        // Exit line-leading whitespace
+                                        isLineLeadingWhitespace = false;
+                                    }
+                                }
+                            }
+                            // Non-whitespace
+                            else {
+                                if (isLineLeadingWhitespace) {
+                                    // Remove partial line-leading whitespace
+                                    stringBuilder = _a.#removeRange(stringBuilder, index - lineLeadingWhitespaceCounter, lineLeadingWhitespaceCounter);
+                                    index -= lineLeadingWhitespaceCounter;
+                                    // Exit line-leading whitespace
+                                    isLineLeadingWhitespace = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // End of string
+        return new JsonhToken(JsonTokenType.String, stringBuilder);
+    }
+    #readQuotelessString(initialChars = "") {
+        let isNamedLiteralPossible = true;
+        // Read quoteless string
+        let stringBuilder = initialChars;
+        while (true) {
+            // Peek char
+            let next = this.#peek();
+            if (next === null) {
+                break;
+            }
+            // Escape sequence
+            if (next === '\\') {
+                this.#read();
+                let escapeSequenceResult = this.#readEscapeSequence();
+                if (escapeSequenceResult instanceof Error) {
+                    return escapeSequenceResult;
+                }
+                stringBuilder += escapeSequenceResult;
+                isNamedLiteralPossible = false;
+            }
+            // End on reserved character
+            else if (_a.#reservedChars.includes(next)) {
+                break;
+            }
+            // End on newline
+            else if (_a.#newlineChars.includes(next)) {
+                break;
+            }
+            // Literal character
+            else {
+                this.#read();
+                stringBuilder += next;
+            }
+        }
+        // Ensure not empty
+        if (stringBuilder.length === 0) {
+            return new Error("Empty quoteless string");
+        }
+        // Trim whitespace
+        stringBuilder = _a.#trimAny(stringBuilder, _a.#whitespaceChars);
+        // Match named literal
+        if (isNamedLiteralPossible) {
+            if (stringBuilder === "null") {
+                return new JsonhToken(JsonTokenType.Null);
+            }
+            else if (stringBuilder === "true") {
+                return new JsonhToken(JsonTokenType.True);
+            }
+            else if (stringBuilder === "false") {
+                return new JsonhToken(JsonTokenType.False);
+            }
+        }
+        // End of quoteless string
+        return new JsonhToken(JsonTokenType.String, stringBuilder);
+    }
+    #detectQuotelessString() {
+        // Read whitespace
+        let whitespaceBuilder = "";
+        while (true) {
+            // Read char
+            let next = this.#peek();
+            if (next === null) {
+                break;
+            }
+            // Newline
+            if (_a.#newlineChars.includes(next)) {
+                // Quoteless strings cannot contain unescaped newlines
+                return {
+                    foundQuotelessString: false,
+                    whitespaceChars: whitespaceBuilder
+                };
+            }
+            // End of whitespace
+            if (!_a.#whitespaceChars.includes(next)) {
+                break;
+            }
+            // Whitespace
+            whitespaceBuilder += next;
+            this.#read();
+        }
+        // Found quoteless string if found backslash or non-reserved char
+        let nextChar = this.#peek();
+        return {
+            foundQuotelessString: nextChar !== null && (nextChar === '\\' || !_a.#reservedChars.includes(nextChar)),
+            whitespaceChars: whitespaceBuilder
+        };
+    }
+    #readNumber() {
+        // Read number
+        let numberBuilder = "";
+        // Read sign
+        let sign = this.#readAny('-', '+');
+        if (sign !== null) {
+            numberBuilder += sign;
+        }
+        // Read base
+        let baseDigits = "0123456789";
+        let hasBaseSpecifier = false;
+        if (this.#readOne('0')) {
+            numberBuilder += '0';
+            let hexBaseChar = this.#readAny('x', 'X');
+            if (hexBaseChar !== null) {
+                numberBuilder += hexBaseChar;
+                baseDigits = "0123456789abcdef";
+                hasBaseSpecifier = true;
+            }
+            else {
+                let binaryBaseChar = this.#readAny('b', 'B');
+                if (binaryBaseChar !== null) {
+                    numberBuilder += binaryBaseChar;
+                    baseDigits = "01";
+                    hasBaseSpecifier = true;
+                }
+                else {
+                    let octalBaseChar = this.#readAny('o', 'O');
+                    if (octalBaseChar !== null) {
+                        numberBuilder += octalBaseChar;
+                        baseDigits = "01234567";
+                        hasBaseSpecifier = true;
+                    }
+                }
+            }
+        }
+        // Read main number
+        let mainResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
+        numberBuilder += mainResult.numberNoExponent;
+        if (mainResult.result instanceof Error) {
+            return { numberToken: mainResult.result, partialCharsRead: numberBuilder };
+        }
+        // Hexadecimal exponent
+        if (numberBuilder.at(-1) === 'e' || numberBuilder.at(-1) === 'E') {
+            // Read sign
+            let exponentSign = this.#readAny('-', '+');
+            if (exponentSign !== null) {
+                numberBuilder += exponentSign;
+                // Read exponent number
+                let exponentResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
+                numberBuilder += exponentResult.numberNoExponent;
+                if (exponentResult.result instanceof Error) {
+                    return { numberToken: exponentResult.result, partialCharsRead: numberBuilder };
+                }
+            }
+        }
+        // Exponent
+        else {
+            let exponentChar = this.#readAny('e', 'E');
+            if (exponentChar !== null) {
+                numberBuilder += exponentChar;
+                // Read sign
+                let exponentSign = this.#readAny('-', '+');
+                if (exponentSign !== null) {
+                    numberBuilder += exponentSign;
+                }
+                // Read exponent number
+                let exponentResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
+                numberBuilder += exponentResult.numberNoExponent;
+                if (exponentResult.result instanceof Error) {
+                    return { numberToken: exponentResult.result, partialCharsRead: numberBuilder };
+                }
+            }
+        }
+        // End of number
+        return { numberToken: new JsonhToken(JsonTokenType.Number, numberBuilder), partialCharsRead: "" };
+    }
+    #readNumberNoExponent(baseDigits, hasBaseSpecifier) {
+        let numberBuilder = "";
+        // Leading underscore
+        if (!hasBaseSpecifier && this.#peek() === '_') {
+            return { result: new Error("Leading `_` in number"), numberNoExponent: numberBuilder };
+        }
+        let isFraction = false;
+        let isEmpty = true;
+        while (true) {
+            // Peek char
+            let next = this.#peek();
+            if (next === null) {
+                break;
+            }
+            // Digit
+            if (baseDigits.includes(next.toLowerCase())) {
+                this.#read();
+                numberBuilder += next;
+                isEmpty = false;
+            }
+            // Dot
+            else if (next === '.') {
+                this.#read();
+                numberBuilder += next;
+                isEmpty = false;
+                // Duplicate dot
+                if (isFraction) {
+                    return { result: new Error("Duplicate `.` in number"), numberNoExponent: numberBuilder };
+                }
+                isFraction = true;
+            }
+            // Underscore
+            else if (next === '_') {
+                this.#read();
+                numberBuilder += next;
+                isEmpty = false;
+            }
+            // Other
+            else {
+                break;
+            }
+        }
+        // Ensure not empty
+        if (isEmpty) {
+            return { result: new Error("Empty number"), numberNoExponent: numberBuilder };
+        }
+        // Ensure at least one digit
+        if (!_a.#containsAnyExcept(numberBuilder, ['.', '-', '+', '_'])) {
+            return { result: new Error("Number must have at least one digit"), numberNoExponent: numberBuilder };
+        }
+        // Trailing underscore
+        if (numberBuilder.endsWith('_')) {
+            return { result: new Error("Trailing `_` in number"), numberNoExponent: numberBuilder };
+        }
+        // End of number
+        return { result: null, numberNoExponent: numberBuilder };
+    }
+    #readNumberOrQuotelessString() {
+        // Read number
+        let number = this.#readNumber();
+        if (!(number.numberToken instanceof Error)) {
+            // Try read quoteless string starting with number
+            let detectQuotelessStringResult = this.#detectQuotelessString();
+            if (detectQuotelessStringResult.foundQuotelessString) {
+                return this.#readQuotelessString(number.numberToken.value + detectQuotelessStringResult.whitespaceChars);
+            }
+            // Otherwise, accept number
+            else {
+                return number.numberToken;
+            }
+        }
+        // Read quoteless string starting with malformed number
+        else {
+            return this.#readQuotelessString(number.partialCharsRead);
+        }
     }
     #readPrimitiveElement() {
-        throw new Error("TODO");
+        // Peek char
+        let next = this.#peek();
+        if (next === null) {
+            return new Error("Expected primitive element, got end of input");
+        }
+        // Number
+        if (next.length === 1 && ((next >= '0' && next <= '9') || (next === '-' || next === '+') || next === '.')) {
+            return this.#readNumberOrQuotelessString();
+        }
+        // String
+        else if (next === '"' || next === '\'') {
+            return this.#readString();
+        }
+        // Quoteless string (or named literal)
+        else {
+            return this.#readQuotelessString();
+        }
     }
     *#readCommentsAndWhitespace() {
         while (true) {
@@ -408,7 +1002,7 @@ class JsonhReader {
         while (true) {
             // Peek char
             let next = this.#peek();
-            if (!next) {
+            if (next === null) {
                 return;
             }
             // Whitespace
@@ -419,6 +1013,104 @@ class JsonhReader {
             else {
                 return;
             }
+        }
+    }
+    #readHexSequence(length) {
+        let hexChars = "";
+        for (let index = 0; index < length; index++) {
+            let next = this.#read();
+            // Hex digit
+            if (next !== null && ((next >= "0" && next <= "9") || (next >= "A" && next <= "F") || (next >= "a" && next <= "f"))) {
+                hexChars += next;
+            }
+            // Unexpected char
+            else {
+                return new Error("Incorrect number of hexadecimal digits in unicode escape sequence");
+            }
+        }
+        // Parse unicode character from hex digits
+        return Number.parseInt(hexChars, 16);
+    }
+    #readEscapeSequence() {
+        let escapeChar = this.#read();
+        if (escapeChar === null) {
+            return new Error("Expected escape sequence, got end of input");
+        }
+        // Reverse solidus
+        if (escapeChar === '\\') {
+            return '\\';
+        }
+        // Backspace
+        else if (escapeChar === 'b') {
+            return '\b';
+        }
+        // Form feed
+        else if (escapeChar === 'f') {
+            return '\f';
+        }
+        // Newline
+        else if (escapeChar === 'n') {
+            return '\n';
+        }
+        // Carriage return
+        else if (escapeChar === 'r') {
+            return '\r';
+        }
+        // Tab
+        else if (escapeChar === 't') {
+            return '\t';
+        }
+        // Vertical tab
+        else if (escapeChar === 'v') {
+            return '\v';
+        }
+        // Null
+        else if (escapeChar === '0') {
+            return '\0';
+        }
+        // Alert
+        else if (escapeChar === 'a') {
+            return '\a';
+        }
+        // Escape
+        else if (escapeChar === 'e') {
+            return '\u001b';
+        }
+        // Unicode hex sequence
+        else if (escapeChar === 'u') {
+            let hexSequence = this.#readHexSequence(4);
+            if (hexSequence instanceof Error) {
+                return hexSequence;
+            }
+            return String.fromCharCode(hexSequence);
+        }
+        // Short unicode hex sequence
+        else if (escapeChar === 'x') {
+            let hexSequence = this.#readHexSequence(2);
+            if (hexSequence instanceof Error) {
+                return hexSequence;
+            }
+            return String.fromCharCode(hexSequence);
+        }
+        // Long unicode hex sequence
+        else if (escapeChar === 'U') {
+            let hexSequence = this.#readHexSequence(8);
+            if (hexSequence instanceof Error) {
+                return hexSequence;
+            }
+            return String.fromCharCode(hexSequence);
+        }
+        // Escaped newline
+        else if (_a.#newlineChars.includes(escapeChar)) {
+            // Join CR LF
+            if (escapeChar === '\r') {
+                this.#readOne('\n');
+            }
+            return "";
+        }
+        // Other
+        else {
+            return escapeChar;
         }
     }
     #peek() {
@@ -437,7 +1129,8 @@ class JsonhReader {
         return next;
     }
     #readOne(option) {
-        if (this.#peek() == option) {
+        if (this.#peek() === option) {
+            this.#read();
             return true;
         }
         return false;
@@ -455,6 +1148,28 @@ class JsonhReader {
         // Option matched
         this.#read();
         return next;
+    }
+    static #removeRange(input, start, end) {
+        return input.slice(0, start) + input.slice(end);
+    }
+    static #trimAny(input, trimChars) {
+        let start = 0;
+        let end = input.length;
+        while (start < end && trimChars.includes(input.at(start))) {
+            start++;
+        }
+        while (end > start && trimChars.includes(input.at(end - 1))) {
+            end--;
+        }
+        return input.slice(start, end);
+    }
+    static #containsAnyExcept(input, allowed) {
+        for (let char of input) {
+            if (!allowed.includes(char)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 _a = JsonhReader;

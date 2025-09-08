@@ -1,5 +1,5 @@
 import TextReader = require("./text-reader.js");
-declare class StringTextReader implements TextReader {
+declare class StringTextReader extends TextReader {
     #private;
     constructor(string: string);
     read(): string | null;

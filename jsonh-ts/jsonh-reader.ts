@@ -61,6 +61,10 @@ class JsonhReader {
      * Constructs a reader that reads JSONH from a text reader.
      */
     constructor(textReader: TextReader, options: JsonhReaderOptions = new JsonhReaderOptions()) {
+        if (typeof textReader === "string") {
+            throw new Error("Do not pass a string to new JsonhReader(). Use JsonhReader.fromString().");
+        }
+
         this.#textReader = textReader;
         this.#options = options;
         this.#charCounter = 0;
@@ -998,7 +1002,7 @@ class JsonhReader {
         }
 
         // Number
-        if (next.length === 1 && (next >= '0' && next <= '9') || (next === '-' || next === '+') || next === '.') {
+        if (next.length === 1 && ((next >= '0' && next <= '9') || (next === '-' || next === '+') || next === '.')) {
             return this.#readNumberOrQuotelessString();
         }
         // String
@@ -1085,7 +1089,7 @@ class JsonhReader {
         while (true) {
             // Peek char
             let next: string | null = this.#peek();
-            if (!next) {
+            if (next === null) {
                 return;
             }
 
@@ -1218,6 +1222,7 @@ class JsonhReader {
     }
     #readOne(option: string): boolean {
         if (this.#peek() === option) {
+            this.#read();
             return true;
         }
         return false;

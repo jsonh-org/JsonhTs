@@ -1,0 +1,16 @@
+{
+  "name": "jsonh-ts-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

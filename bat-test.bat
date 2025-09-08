@@ -4,5 +4,5 @@ if not defined in_subprocess (cmd /k set in_subprocess=y ^& %0 %*) & exit
 cls
 
 :: Test
-cd jsonh-ts
+cd jsonh-ts-tests
 npm test

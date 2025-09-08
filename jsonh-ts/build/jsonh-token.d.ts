@@ -15,7 +15,7 @@ declare class JsonhToken {
     /**
      * Constructs a single JSONH token.
      */
-    constructor(jsonType: JsonTokenType, value: string);
+    constructor(jsonType: JsonTokenType, value?: string);
 }
 export = JsonhToken;
 //# sourceMappingURL=jsonh-token.d.ts.map

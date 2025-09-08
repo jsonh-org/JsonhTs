@@ -6,7 +6,6 @@
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
-    "test": "tsx ../jsonh-ts-tests/tests.ts",
     "build": "tsc"
   },
   "repository": {

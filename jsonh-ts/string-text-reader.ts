@@ -1,30 +1,31 @@
 import TextReader = require("./text-reader.js");
 
-class StringTextReader implements TextReader {
+class StringTextReader extends TextReader {
     #string: string;
     #index: number;
 
     constructor(string: string) {
+        super();
         this.#string = string;
         this.#index = 0;
     }
 
-    read(): string | null {
+    override read(): string | null {
         if (this.#index >= this.#string.length) {
             return null;
         }
         return this.#string.at(this.#index++)!;
     }
-    peek(): string | null {
+    override peek(): string | null {
         if (this.#index >= this.#string.length) {
             return null;
         }
         return this.#string.at(this.#index)!;
     }
-    done(): boolean {
+    override done(): boolean {
         return this.#index >= this.#string.length;
     }
-    readToEnd(): string {
+    override readToEnd(): string {
         let currentIndex: number = this.#index;
         this.#index = this.#string.length;
         return this.#string.slice(currentIndex);
