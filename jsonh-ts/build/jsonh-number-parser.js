@@ -1,4 +1,5 @@
 "use strict";
+const Result = require("./result.js");
 /**
  * Methods for parsing JSONH numbers.
  *
@@ -47,12 +48,12 @@ class JsonhNumberParser {
         }
         // Parse number with base digits
         let number = this.#parseFractionalNumberWithExponent(digits, baseDigits);
-        if (number instanceof Error) {
+        if (number.isError) {
             return number;
         }
         // Apply sign
         if (sign !== 1) {
-            number *= sign;
+            number.value *= sign;
         }
         return number;
     }
@@ -88,15 +89,15 @@ class JsonhNumberParser {
         let exponentPart = digits.slice(exponentIndex + 1);
         // Parse mantissa and exponent
         let mantissa = this.#parseFractionalNumber(mantissaPart, baseDigits);
-        if (mantissa instanceof Error) {
+        if (mantissa.isError) {
             return mantissa;
         }
         let exponent = this.#parseFractionalNumber(exponentPart, baseDigits);
-        if (exponent instanceof Error) {
+        if (exponent.isError) {
             return exponent;
         }
         // Multiply mantissa by 10 ^ exponent
-        return mantissa * (10 ** exponent);
+        return Result.fromValue(mantissa.value * (10 ** exponent.value));
     }
     /**
      * Converts a fractional number (e.g. `123.45`) from the given base (e.g. `01234567`) to a base-10 real.
@@ -113,15 +114,15 @@ class JsonhNumberParser {
         let fractionalPart = digits.slice(dotIndex + 1);
         // Parse parts of number
         let whole = this.#parseWholeNumber(wholePart, baseDigits);
-        if (whole instanceof Error) {
+        if (whole.isError) {
             return whole;
         }
         let fraction = this.#parseWholeNumber(fractionalPart, baseDigits);
-        if (fraction instanceof Error) {
+        if (fraction.isError) {
             return fraction;
         }
         // Combine whole and fraction
-        return Number.parseFloat(whole + '.' + fraction);
+        return Result.fromValue(Number.parseFloat(whole.value + '.' + fraction.value));
     }
     /**
      * Converts a whole number (e.g. `12345`) from the given base (e.g. `01234567`) to a base-10 integer.
@@ -145,7 +146,7 @@ class JsonhNumberParser {
             let digitInt = baseDigits.indexOf(digitChar.toLowerCase());
             // Ensure digit is valid
             if (digitInt < 0) {
-                return new Error(`Invalid digit: '${digitChar}'`);
+                return Result.fromError(new Error(`Invalid digit: '${digitChar}'`));
             }
             // Get magnitude of current digit column
             let columnNumber = digits.length - 1 - index;
@@ -157,7 +158,7 @@ class JsonhNumberParser {
         if (sign !== 1) {
             integer *= sign;
         }
-        return integer;
+        return Result.fromValue(integer);
     }
     static #indexOfAny(input, chars) {
         for (let i = 0; i < input.length; i++) {

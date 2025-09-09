@@ -1,3 +1,4 @@
+import Result = require("./result.js");
 /**
  * Methods for parsing JSONH numbers.
  *
@@ -14,7 +15,7 @@ declare class JsonhNumberParser {
      * Output: 5200
      * ```
      */
-    static parse(jsonhNumber: string): number | Error;
+    static parse(jsonhNumber: string): Result<number>;
 }
 export = JsonhNumberParser;
 //# sourceMappingURL=jsonh-number-parser.d.ts.map

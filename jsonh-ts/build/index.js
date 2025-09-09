@@ -7,7 +7,7 @@ const JsonTokenType = require("./json-token-type.js");
 const JsonhNumberParser = require("./jsonh-number-parser.js");
 const TextReader = require("./text-reader.js");
 const StringTextReader = require("./string-text-reader.js");
-const ResultHelpers = require("./result-helpers.js");
+const Result = require("./result.js");
 module.exports = {
     JsonhReader,
     JsonhReaderOptions,
@@ -17,6 +17,6 @@ module.exports = {
     JsonhNumberParser,
     TextReader,
     StringTextReader,
-    ...ResultHelpers,
+    Result,
 };
 //# sourceMappingURL=index.js.map

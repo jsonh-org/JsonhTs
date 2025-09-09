@@ -1,4 +1,4 @@
-import { JsonhReader, JsonTokenType, JsonhNumberParser, valueOrThrow } from "../jsonh-ts/build/index.js"
+import { JsonhReader, JsonTokenType, JsonhNumberParser } from "../jsonh-ts/build/index.js"
 import { expect, test } from 'vitest'
 
 /*
@@ -15,14 +15,14 @@ test("BasicObjectTest", () => {
     let tokens = [... reader.readElement()];
 
     for (let token of tokens) {
-        expect(token).not.toBeInstanceOf(Error);
+        expect(token.isError).toBe(false);
     }
-    expect(tokens[0].jsonType).toBe(JsonTokenType.StartObject);
-    expect(tokens[1].jsonType).toBe(JsonTokenType.PropertyName);
-    expect(tokens[1].value).toBe("a");
-    expect(tokens[2].jsonType).toBe(JsonTokenType.String);
-    expect(tokens[2].value).toBe("b");
-    expect(tokens[3].jsonType).toBe(JsonTokenType.EndObject);
+    expect(tokens[0].value.jsonType).toBe(JsonTokenType.StartObject);
+    expect(tokens[1].value.jsonType).toBe(JsonTokenType.PropertyName);
+    expect(tokens[1].value.value).toBe("a");
+    expect(tokens[2].value.jsonType).toBe(JsonTokenType.String);
+    expect(tokens[2].value.value).toBe("b");
+    expect(tokens[3].value.jsonType).toBe(JsonTokenType.EndObject);
 });
 
 /*
@@ -33,7 +33,7 @@ test("EscapeSequenceTest", () => {
     let jsonh = `
 "\\U0001F47D and \\uD83D\\uDC7D"
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element).toBe("👽 and 👽");
 });
@@ -42,7 +42,7 @@ test("QuotelessEscapeSequenceTest", () => {
     let jsonh = `
 \\U0001F47D and \\uD83D\\uDC7D
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element).toBe("👽 and 👽");
 });
@@ -53,7 +53,7 @@ test("MultiQuotedStringTest", () => {
   Hello! Here's a quote: ". Now a double quote: "". And a triple quote! """. Escape: \\\\\\U0001F47D.
  """"
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element).toBe(" Hello! Here's a quote: \". Now a double quote: \"\". And a triple quote! \"\"\". Escape: \\👽.");
 });
@@ -66,7 +66,7 @@ test("ArrayTest", () => {
     4 5, 6
 ]
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element.length).toBe(5);
     expect(element[0]).toBe(1);
@@ -77,7 +77,7 @@ test("ArrayTest", () => {
 });
 
 test("NumberParserTest", () => {
-    expect(Math.trunc(JsonhNumberParser.parse("1.2e3.4"))).toBe(3014);
+    expect(Math.trunc(JsonhNumberParser.parse("1.2e3.4").value)).toBe(3014);
 });
 
 test("BracelessObjectTest", () => {
@@ -85,7 +85,7 @@ test("BracelessObjectTest", () => {
 a: b
 c : d
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(Object.keys(element).length).toBe(2);
     expect(element["a"]).toBe("b");
@@ -100,7 +100,7 @@ test("CommentTest", () => {
         3 /* block comment */, 4
 ]
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element.length).toBe(4);
     expect(element[0]).toBe(1);
@@ -117,7 +117,7 @@ test("QuotelessStringStartingWithKeywordTest", () => {
     let jsonh = `
 [nulla, null b, null]
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element.length).toBe(3);
     expect(element[0]).toBe("nulla");
@@ -129,7 +129,7 @@ test("BracelessObjectWithInvalidValueTest", () => {
     let jsonh = `
 a: {
 `;
-    expect(JsonhReader.parseElementFromString(jsonh)).toBeInstanceOf(Error);
+    expect(JsonhReader.parseElementFromString(jsonh).isError).toBe(true);
 });
 
 test("NestedBracelessObjectTest", () => {
@@ -139,7 +139,7 @@ test("NestedBracelessObjectTest", () => {
     c: d
 ]
 `;
-    expect(JsonhReader.parseElementFromString(jsonh)).toBeInstanceOf(Error);
+    expect(JsonhReader.parseElementFromString(jsonh).isError).toBe(true);
 });
 
 test("QuotelessStringsLeadingTrailingWhitespaceTest", () => {
@@ -148,7 +148,7 @@ test("QuotelessStringsLeadingTrailingWhitespaceTest", () => {
     a b  , 
 ]
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element.length).toBe(1);
     expect(element[0]).toBe("a b");
@@ -160,7 +160,7 @@ test("SpaceInQuotelessPropertyNameTest", () => {
     a b: c d
 }
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(Object.keys(element).length).toBe(1);
     expect(element["a b"]).toBe("c d");
@@ -172,7 +172,7 @@ a: \\"5
 b: \\\\z
 c: 5 \\\\
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(Object.keys(element).length).toBe(3);
     expect(element["a"]).toBe("\"5");
@@ -185,7 +185,7 @@ test("MultiQuotedStringsNoLastNewlineWhitespaceTest", () => {
 """
   hello world  """
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element).toBe("\n  hello world  ");
 });
@@ -195,7 +195,7 @@ test("MultiQuotedStringsNoFirstWhitespaceNewlineTest", () => {
 """  hello world
   """
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element).toBe("  hello world\n  ");
 });
@@ -204,7 +204,7 @@ test("QuotelessStringsEscapedLeadingTrailingWhitespaceTest", () => {
     let jsonh = `
 \nZ\ \r
 `;
-    let element = valueOrThrow(JsonhReader.parseElementFromString(jsonh));
+    let element = JsonhReader.parseElementFromString(jsonh).value;
 
     expect(element).toBe("Z");
 });
@@ -214,13 +214,13 @@ test("HexNumberWithETest", () => {
 0x5e3
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBe(0x5e3);
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0x5e3);
 
     let jsonh2 = `
 0x5e+3
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh2))).toBe(5000);
+    expect(JsonhReader.parseElementFromString(jsonh2).value).toBe(5000);
 });
 
 test("NumberWithRepeatedUnderscoresTest", () => {
@@ -228,7 +228,7 @@ test("NumberWithRepeatedUnderscoresTest", () => {
 100__000
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBe(100_000);
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(100_000);
 });
 
 test("NumberWithUnderscoreAfterBaseSpecifierTest", () => {
@@ -236,7 +236,7 @@ test("NumberWithUnderscoreAfterBaseSpecifierTest", () => {
 0b_100
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBe(0b100);
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0b100);
 });
 
 test("NegativeNumberWithBaseSpecifierTest", () => {
@@ -244,7 +244,7 @@ test("NegativeNumberWithBaseSpecifierTest", () => {
 -0x5
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBe(-0x5);
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(-0x5);
 });
 
 test("NumberDotTest", () => {
@@ -252,15 +252,15 @@ test("NumberDotTest", () => {
 .
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBeTypeOf("string");
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBe(".");
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBeTypeOf("string");
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(".");
 
     let jsonh2 = `
 -.
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh2))).toBeTypeOf("string");
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh2))).toBe("-.");
+    expect(JsonhReader.parseElementFromString(jsonh2).value).toBeTypeOf("string");
+    expect(JsonhReader.parseElementFromString(jsonh2).value).toBe("-.");
 });
 
 test("DuplicatePropertyNameTest", () => {
@@ -272,7 +272,7 @@ test("DuplicatePropertyNameTest", () => {
 }
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toStrictEqual({
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual({
         a: 1,
         c: 2,
         a: 3,
@@ -284,6 +284,6 @@ test("EmptyNumberTest", () => {
 0e
 `;
 
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBeTypeOf("string");
-    expect(valueOrThrow(JsonhReader.parseElementFromString(jsonh))).toBe("0e");
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBeTypeOf("string");
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe("0e");
 });

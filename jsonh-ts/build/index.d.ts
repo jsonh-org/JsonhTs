@@ -6,8 +6,8 @@ import JsonTokenType = require("./json-token-type.js");
 import JsonhNumberParser = require("./jsonh-number-parser.js");
 import TextReader = require("./text-reader.js");
 import StringTextReader = require("./string-text-reader.js");
+import Result = require("./result.js");
 declare const _default: {
-    valueOrThrow: <T>(value: T | Error) => T;
     JsonhReader: typeof JsonhReader;
     JsonhReaderOptions: typeof JsonhReaderOptions;
     JsonhVersion: typeof JsonhVersion;
@@ -16,6 +16,7 @@ declare const _default: {
     JsonhNumberParser: typeof JsonhNumberParser;
     TextReader: typeof TextReader;
     StringTextReader: typeof StringTextReader;
+    Result: typeof Result;
 };
 export = _default;
 //# sourceMappingURL=index.d.ts.map

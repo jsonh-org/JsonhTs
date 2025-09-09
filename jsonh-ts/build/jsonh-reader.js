@@ -6,6 +6,7 @@ const StringTextReader = require("./string-text-reader.js");
 const JsonhToken = require("./jsonh-token.js");
 const JsonTokenType = require("./json-token-type.js");
 const JsonhNumberParser = require("./jsonh-number-parser.js");
+const Result = require("./result.js");
 /**
  * A reader that reads JSONH tokens from a string.
  */
@@ -68,6 +69,12 @@ class JsonhReader {
         this.#charCounter = 0;
     }
     /**
+     * Constructs a reader that reads JSONH from a text reader.
+     */
+    static fromTextReader(textReader, options = new JsonhReaderOptions()) {
+        return new _a(textReader, options);
+    }
+    /**
      * Constructs a reader that reads JSONH from a string.
      */
     static fromString(string, options = new JsonhReaderOptions()) {
@@ -114,15 +121,15 @@ class JsonhReader {
         };
         for (let tokenResult of this.readElement()) {
             // Check error
-            if (tokenResult instanceof Error) {
-                return tokenResult;
+            if (tokenResult.isError) {
+                return Result.fromError(tokenResult.error);
             }
-            switch (tokenResult.jsonType) {
+            switch (tokenResult.value.jsonType) {
                 // Null
                 case JsonTokenType.Null: {
                     let node = null;
                     if (submitNode(node)) {
-                        return node;
+                        return Result.fromValue(node);
                     }
                     break;
                 }
@@ -130,7 +137,7 @@ class JsonhReader {
                 case JsonTokenType.True: {
                     let node = true;
                     if (submitNode(node)) {
-                        return node;
+                        return Result.fromValue(node);
                     }
                     break;
                 }
@@ -138,28 +145,28 @@ class JsonhReader {
                 case JsonTokenType.False: {
                     let node = false;
                     if (submitNode(node)) {
-                        return node;
+                        return Result.fromValue(node);
                     }
                     break;
                 }
                 // String
                 case JsonTokenType.String: {
-                    let node = tokenResult.value;
+                    let node = tokenResult.value.value;
                     if (submitNode(node)) {
-                        return node;
+                        return Result.fromValue(node);
                     }
                     break;
                 }
                 // Number
                 case JsonTokenType.Number: {
                     // TODO
-                    let result = JsonhNumberParser.parse(tokenResult.value);
-                    if (result instanceof Error) {
-                        return result;
+                    let result = JsonhNumberParser.parse(tokenResult.value.value);
+                    if (result.isError) {
+                        return Result.fromError(result.error);
                     }
-                    let node = result;
+                    let node = result.value;
                     if (submitNode(node)) {
-                        return node;
+                        return Result.fromValue(node);
                     }
                     break;
                 }
@@ -184,13 +191,13 @@ class JsonhReader {
                     }
                     // Root node
                     else {
-                        return currentNodes.at(-1);
+                        return Result.fromValue(currentNodes.at(-1));
                     }
                     break;
                 }
                 // Property Name
                 case JsonTokenType.PropertyName: {
-                    currentPropertyName = tokenResult.value;
+                    currentPropertyName = tokenResult.value.value;
                     break;
                 }
                 // Comment
@@ -199,12 +206,12 @@ class JsonhReader {
                 }
                 // Not Implemented
                 default: {
-                    return new Error("Token type not implemented");
+                    return Result.fromError(new Error("Token type not implemented"));
                 }
             }
         }
         // End of input
-        return new Error("Expected token, got end of input");
+        return Result.fromError(new Error("Expected token, got end of input"));
     }
     /**
      * Tries to find the given property name in the reader.
@@ -225,10 +232,10 @@ class JsonhReader {
         let currentDepth = 0;
         for (let tokenResult of this.readElement()) {
             // Check error
-            if (tokenResult instanceof Error) {
+            if (tokenResult.isError) {
                 return false;
             }
-            switch (tokenResult.jsonType) {
+            switch (tokenResult.value.jsonType) {
                 // Start structure
                 case JsonTokenType.StartObject:
                 case JsonTokenType.StartArray: {
@@ -243,7 +250,7 @@ class JsonhReader {
                 }
                 // Property name
                 case JsonTokenType.PropertyName: {
-                    if (currentDepth === 1 && tokenResult.value === propertyName) {
+                    if (currentDepth === 1 && tokenResult.value.value === propertyName) {
                         // Path found
                         return true;
                     }
@@ -260,7 +267,7 @@ class JsonhReader {
     *readElement() {
         // Comments & whitespace
         for (let token of this.#readCommentsAndWhitespace()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -269,13 +276,13 @@ class JsonhReader {
         // Peek result
         let next = this.#peek();
         if (next === null) {
-            yield new Error("Expected token, got end of input");
+            yield Result.fromError(new Error("Expected token, got end of input"));
             return;
         }
         // Object
         if (next === '{') {
             for (let token of this.#readObject()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -285,7 +292,7 @@ class JsonhReader {
         // Array
         else if (next === '[') {
             for (let token of this.#readArray()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -295,31 +302,31 @@ class JsonhReader {
         // Primitive value (null, true, false, string, number)
         else {
             let token = this.#readPrimitiveElement();
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
             // Detect braceless object from property name
-            if (token.jsonType === JsonTokenType.String) {
+            if (token.value.jsonType === JsonTokenType.String) {
                 // Try read property name
                 let propertyNameTokens = [];
-                for (let propertyNameToken of this.#readPropertyName(token.value)) {
+                for (let propertyNameToken of this.#readPropertyName(token.value.value)) {
                     // Possible braceless object
-                    if (!(propertyNameToken instanceof Error)) {
-                        propertyNameTokens.push(propertyNameToken);
+                    if (!propertyNameToken.isError) {
+                        propertyNameTokens.push(propertyNameToken.value);
                     }
                     // Primitive value (error reading property name)
                     else {
                         yield token;
                         for (let nonPropertyNameToken of propertyNameTokens) {
-                            yield nonPropertyNameToken;
+                            yield Result.fromValue(nonPropertyNameToken);
                         }
                         return;
                     }
                 }
                 // Braceless object
                 for (let objectToken of this.#readBracelessObject(propertyNameTokens)) {
-                    if (objectToken instanceof Error) {
+                    if (objectToken.isError) {
                         yield objectToken;
                         return;
                     }
@@ -337,7 +344,7 @@ class JsonhReader {
         if (!this.#readOne('{')) {
             // Braceless object
             for (let token of this.#readBracelessObject()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -346,11 +353,11 @@ class JsonhReader {
             return;
         }
         // Start object
-        yield new JsonhToken(JsonTokenType.StartObject);
+        yield Result.fromValue(new JsonhToken(JsonTokenType.StartObject));
         while (true) {
             // Comments & whitespace
             for (let token of this.#readCommentsAndWhitespace()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -360,24 +367,24 @@ class JsonhReader {
             if (next === null) {
                 // End of incomplete object
                 if (this.#options.incompleteInputs) {
-                    yield new JsonhToken(JsonTokenType.EndObject);
+                    yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                     return;
                 }
                 // Missing closing brace
-                yield new Error("Expected `}` to end object, got end of input");
+                yield Result.fromError(new Error("Expected `}` to end object, got end of input"));
                 return;
             }
             // Closing brace
             if (next === '}') {
                 // End of object
                 this.#read();
-                yield new JsonhToken(JsonTokenType.EndObject);
+                yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                 return;
             }
             // Property
             else {
                 for (let token of this.#readProperty()) {
-                    if (token instanceof Error) {
+                    if (token.isError) {
                         yield token;
                         return;
                     }
@@ -388,11 +395,11 @@ class JsonhReader {
     }
     *#readBracelessObject(propertyNameTokens = null) {
         // Start of object
-        yield new JsonhToken(JsonTokenType.StartObject);
+        yield Result.fromValue(new JsonhToken(JsonTokenType.StartObject));
         // Initial tokens
         if (propertyNameTokens !== null) {
             for (let initialToken of this.#readProperty(propertyNameTokens)) {
-                if (initialToken instanceof Error) {
+                if (initialToken.isError) {
                     yield initialToken;
                     return;
                 }
@@ -402,7 +409,7 @@ class JsonhReader {
         while (true) {
             // Comments & whitespace
             for (let token of this.#readCommentsAndWhitespace()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -410,12 +417,12 @@ class JsonhReader {
             }
             if (this.#peek() === null) {
                 // End of braceless object
-                yield new JsonhToken(JsonTokenType.EndObject);
+                yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                 return;
             }
             // Property
             for (let token of this.#readProperty()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -427,12 +434,12 @@ class JsonhReader {
         // Property name
         if (propertyNameTokens !== null) {
             for (let token of propertyNameTokens) {
-                yield token;
+                yield Result.fromValue(token);
             }
         }
         else {
             for (let token of this.#readPropertyName()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -441,7 +448,7 @@ class JsonhReader {
         }
         // Comments & whitespace
         for (let token of this.#readCommentsAndWhitespace()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -449,7 +456,7 @@ class JsonhReader {
         }
         // Property value
         for (let token of this.readElement()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -457,7 +464,7 @@ class JsonhReader {
         }
         // Comments & whitespace
         for (let token of this.#readCommentsAndWhitespace()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -470,15 +477,15 @@ class JsonhReader {
         // String
         if (string === null) {
             let stringToken = this.#readString();
-            if (stringToken instanceof Error) {
+            if (stringToken.isError) {
                 yield stringToken;
                 return;
             }
-            string = stringToken.value;
+            string = stringToken.value.value;
         }
         // Comments & whitespace
         for (let token of this.#readCommentsAndWhitespace()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -486,24 +493,24 @@ class JsonhReader {
         }
         // Colon
         if (!this.#readOne(':')) {
-            yield new Error("Expected `:` after property name in object");
+            yield Result.fromError(new Error("Expected `:` after property name in object"));
             return;
         }
         // End of property name
-        yield new JsonhToken(JsonTokenType.PropertyName, string);
+        yield Result.fromValue(new JsonhToken(JsonTokenType.PropertyName, string));
     }
     *#readArray() {
         // Opening bracket
         if (!this.#readOne('[')) {
-            yield new Error("Expected `[` to start array");
+            yield Result.fromError(new Error("Expected `[` to start array"));
             return;
         }
         // Start of array
-        yield new JsonhToken(JsonTokenType.StartArray);
+        yield Result.fromValue(new JsonhToken(JsonTokenType.StartArray));
         while (true) {
             // Comments & whitespace
             for (let token of this.#readCommentsAndWhitespace()) {
-                if (token instanceof Error) {
+                if (token.isError) {
                     yield token;
                     return;
                 }
@@ -513,24 +520,24 @@ class JsonhReader {
             if (next === null) {
                 // End of incomplete array
                 if (this.#options.incompleteInputs) {
-                    yield new JsonhToken(JsonTokenType.EndArray);
+                    yield Result.fromValue(new JsonhToken(JsonTokenType.EndArray));
                     return;
                 }
                 // Missing closing bracket
-                yield new Error("Expected `]` to end array, got end of input");
+                yield Result.fromError(new Error("Expected `]` to end array, got end of input"));
                 return;
             }
             // Closing bracket
             if (next === ']') {
                 // End of array
                 this.#read();
-                yield new JsonhToken(JsonTokenType.EndArray);
+                yield Result.fromValue(new JsonhToken(JsonTokenType.EndArray));
                 return;
             }
             // Item
             else {
                 for (let token of this.#readItem()) {
-                    if (token instanceof Error) {
+                    if (token.isError) {
                         yield token;
                         return;
                     }
@@ -542,7 +549,7 @@ class JsonhReader {
     *#readItem() {
         // Element
         for (let token of this.readElement()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -550,7 +557,7 @@ class JsonhReader {
         }
         // Comments & whitespace
         for (let token of this.#readCommentsAndWhitespace()) {
-            if (token instanceof Error) {
+            if (token.isError) {
                 yield token;
                 return;
             }
@@ -572,7 +579,7 @@ class JsonhReader {
         }
         // Empty string
         if (startQuoteCounter === 2) {
-            return new JsonhToken(JsonTokenType.String, "");
+            return Result.fromValue(new JsonhToken(JsonTokenType.String, ""));
         }
         // Count multiple end quotes
         let endQuoteCounter = 0;
@@ -581,7 +588,7 @@ class JsonhReader {
         while (true) {
             let next = this.#read();
             if (next === null) {
-                return new Error("Expected end of string, got end of input");
+                return Result.fromError(new Error("Expected end of string, got end of input"));
             }
             // Partial end quote was actually part of string
             if (next !== startQuote) {
@@ -598,10 +605,10 @@ class JsonhReader {
             // Escape sequence
             else if (next === '\\') {
                 let escapeSequenceResult = this.#readEscapeSequence();
-                if (escapeSequenceResult instanceof Error) {
-                    return escapeSequenceResult;
+                if (escapeSequenceResult.isError) {
+                    return Result.fromError(escapeSequenceResult.error);
                 }
-                stringBuilder += escapeSequenceResult;
+                stringBuilder += escapeSequenceResult.value;
             }
             // Literal character
             else {
@@ -707,7 +714,7 @@ class JsonhReader {
             }
         }
         // End of string
-        return new JsonhToken(JsonTokenType.String, stringBuilder);
+        return Result.fromValue(new JsonhToken(JsonTokenType.String, stringBuilder));
     }
     #readQuotelessString(initialChars = "") {
         let isNamedLiteralPossible = true;
@@ -723,10 +730,10 @@ class JsonhReader {
             if (next === '\\') {
                 this.#read();
                 let escapeSequenceResult = this.#readEscapeSequence();
-                if (escapeSequenceResult instanceof Error) {
-                    return escapeSequenceResult;
+                if (escapeSequenceResult.isError) {
+                    return Result.fromError(escapeSequenceResult.error);
                 }
-                stringBuilder += escapeSequenceResult;
+                stringBuilder += escapeSequenceResult.value;
                 isNamedLiteralPossible = false;
             }
             // End on reserved character
@@ -745,24 +752,24 @@ class JsonhReader {
         }
         // Ensure not empty
         if (stringBuilder.length === 0) {
-            return new Error("Empty quoteless string");
+            return Result.fromError(new Error("Empty quoteless string"));
         }
         // Trim whitespace
         stringBuilder = _a.#trimAny(stringBuilder, _a.#whitespaceChars);
         // Match named literal
         if (isNamedLiteralPossible) {
             if (stringBuilder === "null") {
-                return new JsonhToken(JsonTokenType.Null);
+                return Result.fromValue(new JsonhToken(JsonTokenType.Null));
             }
             else if (stringBuilder === "true") {
-                return new JsonhToken(JsonTokenType.True);
+                return Result.fromValue(new JsonhToken(JsonTokenType.True));
             }
             else if (stringBuilder === "false") {
-                return new JsonhToken(JsonTokenType.False);
+                return Result.fromValue(new JsonhToken(JsonTokenType.False));
             }
         }
         // End of quoteless string
-        return new JsonhToken(JsonTokenType.String, stringBuilder);
+        return Result.fromValue(new JsonhToken(JsonTokenType.String, stringBuilder));
     }
     #detectQuotelessString() {
         // Read whitespace
@@ -835,8 +842,8 @@ class JsonhReader {
         // Read main number
         let mainResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
         numberBuilder += mainResult.numberNoExponent;
-        if (mainResult.result instanceof Error) {
-            return { numberToken: mainResult.result, partialCharsRead: numberBuilder };
+        if (mainResult.result.isError) {
+            return { numberToken: Result.fromError(mainResult.result.error), partialCharsRead: numberBuilder };
         }
         // Hexadecimal exponent
         if (numberBuilder.at(-1) === 'e' || numberBuilder.at(-1) === 'E') {
@@ -847,8 +854,8 @@ class JsonhReader {
                 // Read exponent number
                 let exponentResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
                 numberBuilder += exponentResult.numberNoExponent;
-                if (exponentResult.result instanceof Error) {
-                    return { numberToken: exponentResult.result, partialCharsRead: numberBuilder };
+                if (exponentResult.result.isError) {
+                    return { numberToken: Result.fromError(exponentResult.result.error), partialCharsRead: numberBuilder };
                 }
             }
         }
@@ -865,19 +872,19 @@ class JsonhReader {
                 // Read exponent number
                 let exponentResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
                 numberBuilder += exponentResult.numberNoExponent;
-                if (exponentResult.result instanceof Error) {
-                    return { numberToken: exponentResult.result, partialCharsRead: numberBuilder };
+                if (exponentResult.result.isError) {
+                    return { numberToken: Result.fromError(exponentResult.result.error), partialCharsRead: numberBuilder };
                 }
             }
         }
         // End of number
-        return { numberToken: new JsonhToken(JsonTokenType.Number, numberBuilder), partialCharsRead: "" };
+        return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder)), partialCharsRead: "" };
     }
     #readNumberNoExponent(baseDigits, hasBaseSpecifier) {
         let numberBuilder = "";
         // Leading underscore
         if (!hasBaseSpecifier && this.#peek() === '_') {
-            return { result: new Error("Leading `_` in number"), numberNoExponent: numberBuilder };
+            return { result: Result.fromError(new Error("Leading `_` in number")), numberNoExponent: numberBuilder };
         }
         let isFraction = false;
         let isEmpty = true;
@@ -900,7 +907,7 @@ class JsonhReader {
                 isEmpty = false;
                 // Duplicate dot
                 if (isFraction) {
-                    return { result: new Error("Duplicate `.` in number"), numberNoExponent: numberBuilder };
+                    return { result: Result.fromError(new Error("Duplicate `.` in number")), numberNoExponent: numberBuilder };
                 }
                 isFraction = true;
             }
@@ -917,27 +924,27 @@ class JsonhReader {
         }
         // Ensure not empty
         if (isEmpty) {
-            return { result: new Error("Empty number"), numberNoExponent: numberBuilder };
+            return { result: Result.fromError(new Error("Empty number")), numberNoExponent: numberBuilder };
         }
         // Ensure at least one digit
         if (!_a.#containsAnyExcept(numberBuilder, ['.', '-', '+', '_'])) {
-            return { result: new Error("Number must have at least one digit"), numberNoExponent: numberBuilder };
+            return { result: Result.fromError(new Error("Number must have at least one digit")), numberNoExponent: numberBuilder };
         }
         // Trailing underscore
         if (numberBuilder.endsWith('_')) {
-            return { result: new Error("Trailing `_` in number"), numberNoExponent: numberBuilder };
+            return { result: Result.fromError(new Error("Trailing `_` in number")), numberNoExponent: numberBuilder };
         }
         // End of number
-        return { result: null, numberNoExponent: numberBuilder };
+        return { result: Result.fromValue(), numberNoExponent: numberBuilder };
     }
     #readNumberOrQuotelessString() {
         // Read number
         let number = this.#readNumber();
-        if (!(number.numberToken instanceof Error)) {
+        if (!number.numberToken.isError) {
             // Try read quoteless string starting with number
             let detectQuotelessStringResult = this.#detectQuotelessString();
             if (detectQuotelessStringResult.foundQuotelessString) {
-                return this.#readQuotelessString(number.numberToken.value + detectQuotelessStringResult.whitespaceChars);
+                return this.#readQuotelessString(number.numberToken.value.value + detectQuotelessStringResult.whitespaceChars);
             }
             // Otherwise, accept number
             else {
@@ -953,7 +960,7 @@ class JsonhReader {
         // Peek char
         let next = this.#peek();
         if (next === null) {
-            return new Error("Expected primitive element, got end of input");
+            return Result.fromError(new Error("Expected primitive element, got end of input"));
         }
         // Number
         if (next.length === 1 && ((next >= '0' && next <= '9') || (next === '-' || next === '+') || next === '.')) {
@@ -1001,11 +1008,11 @@ class JsonhReader {
                 blockComment = true;
             }
             else {
-                return new Error("Unexpected `/`");
+                return Result.fromError(new Error("Unexpected `/`"));
             }
         }
         else {
-            return new Error("Unexpected character");
+            return Result.fromError(new Error("Unexpected character"));
         }
         // Read comment
         let commentBuilder = "";
@@ -1015,17 +1022,17 @@ class JsonhReader {
             if (blockComment) {
                 // Error
                 if (next === null) {
-                    return new Error("Expected end of block comment, got end of input");
+                    return Result.fromError(new Error("Expected end of block comment, got end of input"));
                 }
                 // End of block comment
                 if (next === '*' && this.#readOne('/')) {
-                    return new JsonhToken(JsonTokenType.Comment, commentBuilder);
+                    return Result.fromValue(new JsonhToken(JsonTokenType.Comment, commentBuilder));
                 }
             }
             else {
                 // End of line comment
                 if (next === null || _a.#newlineChars.includes(next)) {
-                    return new JsonhToken(JsonTokenType.Comment, commentBuilder);
+                    return Result.fromValue(new JsonhToken(JsonTokenType.Comment, commentBuilder));
                 }
             }
             // Comment char
@@ -1059,80 +1066,80 @@ class JsonhReader {
             }
             // Unexpected char
             else {
-                return new Error("Incorrect number of hexadecimal digits in unicode escape sequence");
+                return Result.fromError(new Error("Incorrect number of hexadecimal digits in unicode escape sequence"));
             }
         }
         // Parse unicode character from hex digits
-        return Number.parseInt(hexChars, 16);
+        return Result.fromValue(Number.parseInt(hexChars, 16));
     }
     #readEscapeSequence() {
         let escapeChar = this.#read();
         if (escapeChar === null) {
-            return new Error("Expected escape sequence, got end of input");
+            return Result.fromError(new Error("Expected escape sequence, got end of input"));
         }
         // Reverse solidus
         if (escapeChar === '\\') {
-            return '\\';
+            return Result.fromValue('\\');
         }
         // Backspace
         else if (escapeChar === 'b') {
-            return '\b';
+            return Result.fromValue('\b');
         }
         // Form feed
         else if (escapeChar === 'f') {
-            return '\f';
+            return Result.fromValue('\f');
         }
         // Newline
         else if (escapeChar === 'n') {
-            return '\n';
+            return Result.fromValue('\n');
         }
         // Carriage return
         else if (escapeChar === 'r') {
-            return '\r';
+            return Result.fromValue('\r');
         }
         // Tab
         else if (escapeChar === 't') {
-            return '\t';
+            return Result.fromValue('\t');
         }
         // Vertical tab
         else if (escapeChar === 'v') {
-            return '\v';
+            return Result.fromValue('\v');
         }
         // Null
         else if (escapeChar === '0') {
-            return '\0';
+            return Result.fromValue('\0');
         }
         // Alert
         else if (escapeChar === 'a') {
-            return '\a';
+            return Result.fromValue('\a');
         }
         // Escape
         else if (escapeChar === 'e') {
-            return '\u001b';
+            return Result.fromValue('\u001b');
         }
         // Unicode hex sequence
         else if (escapeChar === 'u') {
             let hexSequence = this.#readHexSequence(4);
-            if (hexSequence instanceof Error) {
-                return hexSequence;
+            if (hexSequence.isError) {
+                return Result.fromError(hexSequence.error);
             }
-            return String.fromCharCode(hexSequence);
+            return Result.fromValue(String.fromCodePoint(hexSequence.value));
         }
         // Short unicode hex sequence
         else if (escapeChar === 'x') {
             let hexSequence = this.#readHexSequence(2);
-            if (hexSequence instanceof Error) {
-                return hexSequence;
+            if (hexSequence.isError) {
+                return Result.fromError(hexSequence.error);
             }
-            return String.fromCharCode(hexSequence);
+            return Result.fromValue(String.fromCodePoint(hexSequence.value));
         }
         // Long unicode hex sequence
         else if (escapeChar === 'U') {
             let hexSequence = this.#readHexSequence(8);
-            if (hexSequence instanceof Error) {
-                return hexSequence;
+            if (hexSequence.isError) {
+                return Result.fromError(hexSequence.error);
             }
-            return String.fromCodePoint(hexSequence);
+            return Result.fromValue(String.fromCodePoint(hexSequence.value));
         }
         // Escaped newline
         else if (_a.#newlineChars.includes(escapeChar)) {
@@ -1140,11 +1147,11 @@ class JsonhReader {
             if (escapeChar === '\r') {
                 this.#readOne('\n');
             }
-            return "";
+            return Result.fromValue("");
         }
         // Other
         else {
-            return escapeChar;
+            return Result.fromValue(escapeChar);
         }
     }
     #peek() {

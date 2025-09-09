@@ -1,6 +1,7 @@
 import JsonhReaderOptions = require("./jsonh-reader-options.js");
 import TextReader = require("./text-reader.js");
 import JsonhToken = require("./jsonh-token.js");
+import Result = require("./result.js");
 /**
  * A reader that reads JSONH tokens from a string.
  */
@@ -21,7 +22,11 @@ declare class JsonhReader {
     /**
      * Constructs a reader that reads JSONH from a text reader.
      */
-    constructor(textReader: TextReader, options?: JsonhReaderOptions);
+    private constructor();
+    /**
+     * Constructs a reader that reads JSONH from a text reader.
+     */
+    static fromTextReader(textReader: TextReader, options?: JsonhReaderOptions): JsonhReader;
     /**
      * Constructs a reader that reads JSONH from a string.
      */
@@ -29,15 +34,15 @@ declare class JsonhReader {
     /**
      * Parses a single element from a text reader.
      */
-    static parseElementfromTextReader<T = unknown>(textReader: TextReader): T | Error;
+    static parseElementfromTextReader<T = unknown>(textReader: TextReader): Result<T>;
     /**
      * Parses a single element from a string.
      */
-    static parseElementFromString<T = unknown>(string: string): T | Error;
+    static parseElementFromString<T = unknown>(string: string): Result<T>;
     /**
      * Parses a single element from the reader.
      */
-    parseElement<T = unknown>(): T | Error;
+    parseElement<T = unknown>(): Result<T>;
     /**
      * Tries to find the given property name in the reader.
      * For example, to find `c`:
@@ -57,7 +62,7 @@ declare class JsonhReader {
     /**
      * Reads a single element from the reader.
      */
-    readElement(): Generator<JsonhToken | Error>;
+    readElement(): Generator<Result<JsonhToken>>;
 }
 export = JsonhReader;
 //# sourceMappingURL=jsonh-reader.d.ts.map

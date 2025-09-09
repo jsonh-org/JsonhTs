@@ -1,3 +1,5 @@
+import Result = require("./result.js");
+
 /**
  * Methods for parsing JSONH numbers.
  * 
@@ -13,7 +15,7 @@ class JsonhNumberParser {
      * Output: 5200
      * ```
      */
-    static parse(jsonhNumber: string): number | Error {
+    static parse(jsonhNumber: string): Result<number> {
         // Remove underscores
         jsonhNumber = jsonhNumber.replaceAll("_", "");
         let digits: string = jsonhNumber;
@@ -48,14 +50,14 @@ class JsonhNumberParser {
         }
 
         // Parse number with base digits
-        let number: number | Error = this.#parseFractionalNumberWithExponent(digits, baseDigits);
-        if (number instanceof Error) {
+        let number: Result<number> = this.#parseFractionalNumberWithExponent(digits, baseDigits);
+        if (number.isError) {
             return number;
         }
 
         // Apply sign
         if (sign !== 1) {
-            number *= sign;
+            number.value *= sign;
         }
         return number;
     }
@@ -63,7 +65,7 @@ class JsonhNumberParser {
     /**
      * Converts a fractional number with an exponent (e.g. `12.3e4.5`) from the given base (e.g. `01234567`) to a base-10 real.
      */
-    static #parseFractionalNumberWithExponent(digits: string, baseDigits: string): number | Error {
+    static #parseFractionalNumberWithExponent(digits: string, baseDigits: string): Result<number> {
         // Find exponent
         let exponentIndex: number = -1;
         // Hexadecimal exponent
@@ -94,22 +96,22 @@ class JsonhNumberParser {
         let exponentPart: string = digits.slice(exponentIndex + 1);
 
         // Parse mantissa and exponent
-        let mantissa: number | Error = this.#parseFractionalNumber(mantissaPart, baseDigits);
-        if (mantissa instanceof Error) {
+        let mantissa: Result<number> = this.#parseFractionalNumber(mantissaPart, baseDigits);
+        if (mantissa.isError) {
             return mantissa;
         }
-        let exponent: number | Error = this.#parseFractionalNumber(exponentPart, baseDigits);
-        if (exponent instanceof Error) {
+        let exponent: Result<number> = this.#parseFractionalNumber(exponentPart, baseDigits);
+        if (exponent.isError) {
             return exponent;
         }
 
         // Multiply mantissa by 10 ^ exponent
-        return mantissa * (10 ** exponent);
+        return Result.fromValue(mantissa.value * (10 ** exponent.value));
     }
     /**
      * Converts a fractional number (e.g. `123.45`) from the given base (e.g. `01234567`) to a base-10 real.
      */
-    static #parseFractionalNumber(digits: string, baseDigits: string): number | Error {
+    static #parseFractionalNumber(digits: string, baseDigits: string): Result<number> {
         // Find dot
         let dotIndex: number = digits.indexOf('.');
         // If no dot then normalize integer
@@ -122,22 +124,22 @@ class JsonhNumberParser {
         let fractionalPart: string = digits.slice(dotIndex + 1);
 
         // Parse parts of number
-        let whole: number | Error = this.#parseWholeNumber(wholePart, baseDigits);
-        if (whole instanceof Error) {
+        let whole: Result<number> = this.#parseWholeNumber(wholePart, baseDigits);
+        if (whole.isError) {
             return whole;
         }
-        let fraction: number | Error = this.#parseWholeNumber(fractionalPart, baseDigits);
-        if (fraction instanceof Error) {
+        let fraction: Result<number> = this.#parseWholeNumber(fractionalPart, baseDigits);
+        if (fraction.isError) {
             return fraction;
         }
 
         // Combine whole and fraction
-        return Number.parseFloat(whole + '.' + fraction);
+        return Result.fromValue(Number.parseFloat(whole.value + '.' + fraction.value));
     }
     /**
      * Converts a whole number (e.g. `12345`) from the given base (e.g. `01234567`) to a base-10 integer.
      */
-    static #parseWholeNumber(digits: string, baseDigits: string): number | Error {
+    static #parseWholeNumber(digits: string, baseDigits: string): Result<number> {
         // Get sign
         let sign: number = 1;
         if (digits.startsWith('-')) {
@@ -158,7 +160,7 @@ class JsonhNumberParser {
 
             // Ensure digit is valid
             if (digitInt < 0) {
-                return new Error(`Invalid digit: '${digitChar}'`);
+                return Result.fromError(new Error(`Invalid digit: '${digitChar}'`));
             }
 
             // Get magnitude of current digit column
@@ -173,7 +175,7 @@ class JsonhNumberParser {
         if (sign !== 1) {
             integer *= sign;
         }
-        return integer;
+        return Result.fromValue(integer);
     }
     static #indexOfAny(input: string, chars: ReadonlyArray<string>): number {
         for (let i: number = 0; i < input.length; i++) {

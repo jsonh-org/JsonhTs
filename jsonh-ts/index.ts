@@ -6,7 +6,7 @@ import JsonTokenType = require("./json-token-type.js");
 import JsonhNumberParser = require("./jsonh-number-parser.js");
 import TextReader = require("./text-reader.js");
 import StringTextReader = require("./string-text-reader.js");
-import ResultHelpers = require("./result-helpers.js");
+import Result = require("./result.js");
 
 export = {
     JsonhReader,
@@ -17,5 +17,5 @@ export = {
     JsonhNumberParser,
     TextReader,
     StringTextReader,
-    ...ResultHelpers,
+    Result,
 };

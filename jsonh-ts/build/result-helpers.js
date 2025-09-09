@@ -1,6 +1,6 @@
 "use strict";
 function valueOrThrow(value) {
-    if (value instanceof Error) {
+    if (value.isError) {
         throw value;
     }
     return value;
