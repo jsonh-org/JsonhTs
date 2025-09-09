@@ -46,10 +46,14 @@ JsonhTs is a parser implementation of [JSONH v1](https://github.com/jsonh-org/Js
 
 Everything you need is contained within `JsonhReader`:
 
+```
+npm install jsonh-ts
+```
+
 ```ts
 // TypeScript
 
-import { JsonhReader } from "../jsonh-ts/build/index.js";
+import { JsonhReader } from "jsonh-ts";
 
 let jsonh: string = `
 {
@@ -62,7 +66,7 @@ let element: string = JsonhReader.parseElementFromString<string>(jsonh).value;
 ```js
 // JavaScript
 
-const { JsonhReader } = require("../jsonh-ts/build/index.js");
+const { JsonhReader } = require("jsonh-ts");
 
 let jsonh = `
 {
