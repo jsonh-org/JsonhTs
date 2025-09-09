@@ -51,7 +51,7 @@ class JsonhNumberParser {
             return number;
         }
         // Apply sign
-        if (sign !== -1) {
+        if (sign !== 1) {
             number *= sign;
         }
         return number;
@@ -112,11 +112,11 @@ class JsonhNumberParser {
         let wholePart = digits.slice(0, dotIndex);
         let fractionalPart = digits.slice(dotIndex + 1);
         // Parse parts of number
-        let whole = this.#parseWholeNumber(digits, baseDigits);
+        let whole = this.#parseWholeNumber(wholePart, baseDigits);
         if (whole instanceof Error) {
             return whole;
         }
-        let fraction = this.#parseWholeNumber(digits, baseDigits);
+        let fraction = this.#parseWholeNumber(fractionalPart, baseDigits);
         if (fraction instanceof Error) {
             return fraction;
         }

@@ -1228,7 +1228,7 @@ class JsonhReader {
             if (hexSequence instanceof Error) {
                 return hexSequence;
             }
-            return String.fromCharCode(hexSequence);
+            return String.fromCodePoint(hexSequence);
         }
         // Escaped newline
         else if (JsonhReader.#newlineChars.includes(escapeChar)) {
@@ -1280,8 +1280,8 @@ class JsonhReader {
         return next;
     }
 
-    static #removeRange(input: string, start: number, end: number): string {
-        return input.slice(0, start) + input.slice(end);
+    static #removeRange(input: string, start: number, count: number): string {
+        return input.slice(0, start) + input.slice(start + count);
     }
     static #trimAny(input: string, trimChars: ReadonlyArray<string>) {
         let start: number = 0;
