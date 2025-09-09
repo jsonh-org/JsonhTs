@@ -1,10 +1,10 @@
 import { JsonhReader } from "../jsonh-ts/build/index.js";
 
-let jsonh = `
+let jsonh: string = `
 {
     this is: awesome
 }
 `;
-let element = JsonhReader.parseElementFromString(jsonh).value;
+let element: string = JsonhReader.parseElementFromString<string>(jsonh).value;
 
 console.log(element);
