@@ -814,13 +814,16 @@ class JsonhReader {
         // Read base
         let baseDigits = "0123456789";
         let hasBaseSpecifier = false;
+        let hasLeadingZero = false;
         if (this.#readOne('0')) {
             numberBuilder.ref += '0';
+            hasLeadingZero = true;
             let hexBaseChar = this.#readAny('x', 'X');
             if (hexBaseChar !== null) {
                 numberBuilder.ref += hexBaseChar;
                 baseDigits = "0123456789abcdef";
                 hasBaseSpecifier = true;
+                hasLeadingZero = false;
             }
             else {
                 let binaryBaseChar = this.#readAny('b', 'B');
@@ -828,6 +831,7 @@ class JsonhReader {
                     numberBuilder.ref += binaryBaseChar;
                     baseDigits = "01";
                     hasBaseSpecifier = true;
+                    hasLeadingZero = false;
                 }
                 else {
                     let octalBaseChar = this.#readAny('o', 'O');
@@ -835,23 +839,28 @@ class JsonhReader {
                         numberBuilder.ref += octalBaseChar;
                         baseDigits = "01234567";
                         hasBaseSpecifier = true;
+                        hasLeadingZero = false;
                     }
                 }
             }
         }
         // Read main number
-        let mainResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+        let mainResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier, hasLeadingZero);
         if (mainResult.isError) {
             return { numberToken: Result.fromError(mainResult.error), partialCharsRead: numberBuilder.ref };
         }
-        // Hexadecimal exponent
+        // Possible hexadecimal exponent
         if (numberBuilder.ref.at(-1) === 'e' || numberBuilder.ref.at(-1) === 'E') {
-            // Read sign
+            // Read sign (mandatory)
             let exponentSign = this.#readAny('-', '+');
             if (exponentSign !== null) {
                 numberBuilder.ref += exponentSign;
+                // Missing digit between base specifier and exponent (e.g. `0xe+`)
+                if (hasBaseSpecifier && numberBuilder.ref.length == 4) {
+                    return { numberToken: Result.fromError(new Error("Missing digit between base specifier and exponent")), partialCharsRead: numberBuilder.ref };
+                }
                 // Read exponent number
-                let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+                let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits);
                 if (exponentResult.isError) {
                     return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
@@ -868,7 +877,7 @@ class JsonhReader {
                     numberBuilder.ref += exponentSign;
                 }
                 // Read exponent number
-                let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+                let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits);
                 if (exponentResult.isError) {
                     return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
@@ -877,7 +886,7 @@ class JsonhReader {
         // End of number
         return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder.ref)), partialCharsRead: "" };
     }
-    #readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier) {
+    #readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier = false, hasLeadingZero = false) {
         // Leading underscore
         if (!hasBaseSpecifier && this.#peek() === '_') {
             return Result.fromError(new Error("Leading `_` in number"));
@@ -885,7 +894,7 @@ class JsonhReader {
         let isFraction = false;
         let isEmpty = true;
         // Leading zero (not base specifier)
-        if (!hasBaseSpecifier && numberBuilder.ref.length >= 1 && numberBuilder.ref.at(-1) === '0') {
+        if (hasLeadingZero) {
             isEmpty = false;
         }
         while (true) {

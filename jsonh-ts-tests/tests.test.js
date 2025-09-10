@@ -288,10 +288,22 @@ test("EmptyNumberTest", () => {
     expect(JsonhReader.parseElementFromString(jsonh).value).toBe("0e");
 });
 
-test("ZeroExponentTest", () => {
+test("LeadingZeroWithExponentTest", () => {
     let jsonh = `
-0e4
+[0e4, 0xe, 0xEe+2]
 `;
 
-    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0e4);
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual([0e4, 0xe, 1400]);
+
+    let jsonh2 = `
+[e+2, 0xe+2, 0oe+2, 0be+2]
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh2).value).toStrictEqual(["e+2", "0xe+2", "0oe+2", "0be+2"]);
+
+    let jsonh3 = `
+[0x0e+, 0b0e+_1]
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh3).value).toStrictEqual(["0x0e+", "0b0e+_1"]);
 });
