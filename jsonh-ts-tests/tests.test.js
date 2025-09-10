@@ -287,3 +287,11 @@ test("EmptyNumberTest", () => {
     expect(JsonhReader.parseElementFromString(jsonh).value).toBeTypeOf("string");
     expect(JsonhReader.parseElementFromString(jsonh).value).toBe("0e");
 });
+
+test("ZeroExponentTest", () => {
+    let jsonh = `
+0e4
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0e4);
+});

@@ -805,34 +805,34 @@ class JsonhReader {
     }
     #readNumber() {
         // Read number
-        let numberBuilder = "";
+        let numberBuilder = { ref: "" };
         // Read sign
         let sign = this.#readAny('-', '+');
         if (sign !== null) {
-            numberBuilder += sign;
+            numberBuilder.ref += sign;
         }
         // Read base
         let baseDigits = "0123456789";
         let hasBaseSpecifier = false;
         if (this.#readOne('0')) {
-            numberBuilder += '0';
+            numberBuilder.ref += '0';
             let hexBaseChar = this.#readAny('x', 'X');
             if (hexBaseChar !== null) {
-                numberBuilder += hexBaseChar;
+                numberBuilder.ref += hexBaseChar;
                 baseDigits = "0123456789abcdef";
                 hasBaseSpecifier = true;
             }
             else {
                 let binaryBaseChar = this.#readAny('b', 'B');
                 if (binaryBaseChar !== null) {
-                    numberBuilder += binaryBaseChar;
+                    numberBuilder.ref += binaryBaseChar;
                     baseDigits = "01";
                     hasBaseSpecifier = true;
                 }
                 else {
                     let octalBaseChar = this.#readAny('o', 'O');
                     if (octalBaseChar !== null) {
-                        numberBuilder += octalBaseChar;
+                        numberBuilder.ref += octalBaseChar;
                         baseDigits = "01234567";
                         hasBaseSpecifier = true;
                     }
@@ -840,22 +840,20 @@ class JsonhReader {
             }
         }
         // Read main number
-        let mainResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
-        numberBuilder += mainResult.numberNoExponent;
-        if (mainResult.result.isError) {
-            return { numberToken: Result.fromError(mainResult.result.error), partialCharsRead: numberBuilder };
+        let mainResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+        if (mainResult.isError) {
+            return { numberToken: Result.fromError(mainResult.error), partialCharsRead: numberBuilder.ref };
         }
         // Hexadecimal exponent
-        if (numberBuilder.at(-1) === 'e' || numberBuilder.at(-1) === 'E') {
+        if (numberBuilder.ref.at(-1) === 'e' || numberBuilder.ref.at(-1) === 'E') {
             // Read sign
             let exponentSign = this.#readAny('-', '+');
             if (exponentSign !== null) {
-                numberBuilder += exponentSign;
+                numberBuilder.ref += exponentSign;
                 // Read exponent number
-                let exponentResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
-                numberBuilder += exponentResult.numberNoExponent;
-                if (exponentResult.result.isError) {
-                    return { numberToken: Result.fromError(exponentResult.result.error), partialCharsRead: numberBuilder };
+                let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+                if (exponentResult.isError) {
+                    return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
             }
         }
@@ -863,31 +861,33 @@ class JsonhReader {
         else {
             let exponentChar = this.#readAny('e', 'E');
             if (exponentChar !== null) {
-                numberBuilder += exponentChar;
+                numberBuilder.ref += exponentChar;
                 // Read sign
                 let exponentSign = this.#readAny('-', '+');
                 if (exponentSign !== null) {
-                    numberBuilder += exponentSign;
+                    numberBuilder.ref += exponentSign;
                 }
                 // Read exponent number
-                let exponentResult = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
-                numberBuilder += exponentResult.numberNoExponent;
-                if (exponentResult.result.isError) {
-                    return { numberToken: Result.fromError(exponentResult.result.error), partialCharsRead: numberBuilder };
+                let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+                if (exponentResult.isError) {
+                    return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
             }
         }
         // End of number
-        return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder)), partialCharsRead: "" };
+        return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder.ref)), partialCharsRead: "" };
     }
-    #readNumberNoExponent(baseDigits, hasBaseSpecifier) {
-        let numberBuilder = "";
+    #readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier) {
         // Leading underscore
         if (!hasBaseSpecifier && this.#peek() === '_') {
-            return { result: Result.fromError(new Error("Leading `_` in number")), numberNoExponent: numberBuilder };
+            return Result.fromError(new Error("Leading `_` in number"));
         }
         let isFraction = false;
         let isEmpty = true;
+        // Leading zero (not base specifier)
+        if (!hasBaseSpecifier && numberBuilder.ref.length >= 1 && numberBuilder.ref.at(-1) === '0') {
+            isEmpty = false;
+        }
         while (true) {
             // Peek char
             let next = this.#peek();
@@ -897,24 +897,24 @@ class JsonhReader {
             // Digit
             if (baseDigits.includes(next.toLowerCase())) {
                 this.#read();
-                numberBuilder += next;
+                numberBuilder.ref += next;
                 isEmpty = false;
             }
             // Dot
             else if (next === '.') {
                 this.#read();
-                numberBuilder += next;
+                numberBuilder.ref += next;
                 isEmpty = false;
                 // Duplicate dot
                 if (isFraction) {
-                    return { result: Result.fromError(new Error("Duplicate `.` in number")), numberNoExponent: numberBuilder };
+                    return Result.fromError(new Error("Duplicate `.` in number"));
                 }
                 isFraction = true;
             }
             // Underscore
             else if (next === '_') {
                 this.#read();
-                numberBuilder += next;
+                numberBuilder.ref += next;
                 isEmpty = false;
             }
             // Other
@@ -924,18 +924,18 @@ class JsonhReader {
         }
         // Ensure not empty
         if (isEmpty) {
-            return { result: Result.fromError(new Error("Empty number")), numberNoExponent: numberBuilder };
+            return Result.fromError(new Error("Empty number"));
         }
         // Ensure at least one digit
-        if (!_a.#containsAnyExcept(numberBuilder, ['.', '-', '+', '_'])) {
-            return { result: Result.fromError(new Error("Number must have at least one digit")), numberNoExponent: numberBuilder };
+        if (!_a.#containsAnyExcept(numberBuilder.ref, ['.', '-', '+', '_'])) {
+            return Result.fromError(new Error("Number must have at least one digit"));
         }
         // Trailing underscore
-        if (numberBuilder.endsWith('_')) {
-            return { result: Result.fromError(new Error("Trailing `_` in number")), numberNoExponent: numberBuilder };
+        if (numberBuilder.ref.endsWith('_')) {
+            return Result.fromError(new Error("Trailing `_` in number"));
         }
         // End of number
-        return { result: Result.fromValue(), numberNoExponent: numberBuilder };
+        return Result.fromValue();
     }
     #readNumberOrQuotelessString() {
         // Read number

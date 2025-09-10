@@ -870,37 +870,37 @@ class JsonhReader {
     }
     #readNumber(): { numberToken: Result<JsonhToken>, partialCharsRead: string } {
         // Read number
-        let numberBuilder: string = "";
+        let numberBuilder: { ref: string } = { ref: "" };
 
         // Read sign
         let sign: string | null = this.#readAny('-', '+');
         if (sign !== null) {
-            numberBuilder += sign;
+            numberBuilder.ref += sign;
         }
 
         // Read base
         let baseDigits: string = "0123456789";
         let hasBaseSpecifier: boolean = false;
         if (this.#readOne('0')) {
-            numberBuilder += '0';
+            numberBuilder.ref += '0';
 
             let hexBaseChar: string | null = this.#readAny('x', 'X');
             if (hexBaseChar !== null) {
-                numberBuilder += hexBaseChar;
+                numberBuilder.ref += hexBaseChar;
                 baseDigits = "0123456789abcdef";
                 hasBaseSpecifier = true;
             }
             else {
                 let binaryBaseChar: string | null = this.#readAny('b', 'B');
                 if (binaryBaseChar !== null) {
-                    numberBuilder += binaryBaseChar;
+                    numberBuilder.ref += binaryBaseChar;
                     baseDigits = "01";
                     hasBaseSpecifier = true;
                 }
                 else {
                     let octalBaseChar: string | null = this.#readAny('o', 'O');
                     if (octalBaseChar !== null) {
-                        numberBuilder += octalBaseChar;
+                        numberBuilder.ref += octalBaseChar;
                         baseDigits = "01234567";
                         hasBaseSpecifier = true;
                     }
@@ -909,24 +909,22 @@ class JsonhReader {
         }
 
         // Read main number
-        let mainResult: { result: Result, numberNoExponent: string } = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
-        numberBuilder += mainResult.numberNoExponent;
-        if (mainResult.result.isError) {
-            return { numberToken: Result.fromError(mainResult.result.error), partialCharsRead: numberBuilder };
+        let mainResult: Result = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+        if (mainResult.isError) {
+            return { numberToken: Result.fromError(mainResult.error), partialCharsRead: numberBuilder.ref };
         }
 
         // Hexadecimal exponent
-        if (numberBuilder.at(-1) === 'e' || numberBuilder.at(-1) === 'E') {
+        if (numberBuilder.ref.at(-1) === 'e' || numberBuilder.ref.at(-1) === 'E') {
             // Read sign
             let exponentSign: string | null = this.#readAny('-', '+');
             if (exponentSign !== null) {
-                numberBuilder += exponentSign;
+                numberBuilder.ref += exponentSign;
 
                 // Read exponent number
-                let exponentResult: { result: Result, numberNoExponent: string } = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
-                numberBuilder += exponentResult.numberNoExponent;
-                if (exponentResult.result.isError) {
-                    return { numberToken: Result.fromError(exponentResult.result.error), partialCharsRead: numberBuilder };
+                let exponentResult: Result = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+                if (exponentResult.isError) {
+                    return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
             }
         }
@@ -934,36 +932,38 @@ class JsonhReader {
         else {
             let exponentChar: string | null = this.#readAny('e', 'E');
             if (exponentChar !== null) {
-                numberBuilder += exponentChar;
+                numberBuilder.ref += exponentChar;
 
                 // Read sign
                 let exponentSign: string | null = this.#readAny('-', '+');
                 if (exponentSign !== null) {
-                    numberBuilder += exponentSign;
+                    numberBuilder.ref += exponentSign;
                 }
 
                 // Read exponent number
-                let exponentResult: { result: Result, numberNoExponent: string } = this.#readNumberNoExponent(baseDigits, hasBaseSpecifier);
-                numberBuilder += exponentResult.numberNoExponent;
-                if (exponentResult.result.isError) {
-                    return { numberToken: Result.fromError(exponentResult.result.error), partialCharsRead: numberBuilder };
+                let exponentResult: Result = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier);
+                if (exponentResult.isError) {
+                    return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
             }
         }
 
         // End of number
-        return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder)), partialCharsRead: "" };
+        return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder.ref)), partialCharsRead: "" };
     }
-    #readNumberNoExponent(baseDigits: string, hasBaseSpecifier: boolean): { result: Result, numberNoExponent: string } {
-        let numberBuilder: string = "";
-
+    #readNumberNoExponent(numberBuilder: { ref: string }, baseDigits: string, hasBaseSpecifier: boolean): Result {
         // Leading underscore
         if (!hasBaseSpecifier && this.#peek() === '_') {
-            return { result: Result.fromError(new Error("Leading `_` in number")), numberNoExponent: numberBuilder };
+            return Result.fromError(new Error("Leading `_` in number"));
         }
 
         let isFraction: boolean = false;
         let isEmpty: boolean = true;
+
+        // Leading zero (not base specifier)
+        if (!hasBaseSpecifier && numberBuilder.ref.length >= 1 && numberBuilder.ref.at(-1) === '0') {
+            isEmpty = false;
+        }
 
         while (true) {
             // Peek char
@@ -975,25 +975,25 @@ class JsonhReader {
             // Digit
             if (baseDigits.includes(next.toLowerCase())) {
                 this.#read();
-                numberBuilder += next;
+                numberBuilder.ref += next;
                 isEmpty = false;
             }
             // Dot
             else if (next === '.') {
                 this.#read();
-                numberBuilder += next;
+                numberBuilder.ref += next;
                 isEmpty = false;
 
                 // Duplicate dot
                 if (isFraction) {
-                    return { result: Result.fromError(new Error("Duplicate `.` in number")), numberNoExponent: numberBuilder };
+                    return Result.fromError(new Error("Duplicate `.` in number"));
                 }
                 isFraction = true;
             }
             // Underscore
             else if (next === '_') {
                 this.#read();
-                numberBuilder += next;
+                numberBuilder.ref += next;
                 isEmpty = false;
             }
             // Other
@@ -1004,21 +1004,21 @@ class JsonhReader {
 
         // Ensure not empty
         if (isEmpty) {
-            return { result: Result.fromError(new Error("Empty number")), numberNoExponent: numberBuilder };
+            return Result.fromError(new Error("Empty number"));
         }
 
         // Ensure at least one digit
-        if (!JsonhReader.#containsAnyExcept(numberBuilder, ['.', '-', '+', '_'])) {
-            return { result: Result.fromError(new Error("Number must have at least one digit")), numberNoExponent: numberBuilder };
+        if (!JsonhReader.#containsAnyExcept(numberBuilder.ref, ['.', '-', '+', '_'])) {
+            return Result.fromError(new Error("Number must have at least one digit"));
         }
 
         // Trailing underscore
-        if (numberBuilder.endsWith('_')) {
-            return { result: Result.fromError(new Error("Trailing `_` in number")), numberNoExponent: numberBuilder };
+        if (numberBuilder.ref.endsWith('_')) {
+            return Result.fromError(new Error("Trailing `_` in number"));
         }
 
         // End of number
-        return { result: Result.fromValue(), numberNoExponent: numberBuilder };
+        return Result.fromValue();
     }
     #readNumberOrQuotelessString(): Result<JsonhToken> {
         // Read number
