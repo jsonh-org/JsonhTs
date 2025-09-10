@@ -847,7 +847,7 @@ class JsonhReader {
         // Read main number
         let mainResult = this.#readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier, hasLeadingZero);
         if (mainResult.isError) {
-            return { numberToken: Result.fromError(mainResult.error), partialCharsRead: numberBuilder.ref };
+            return { number: Result.fromError(mainResult.error), partialCharsRead: numberBuilder.ref };
         }
         // Possible hexadecimal exponent
         if (numberBuilder.ref.at(-1) === 'e' || numberBuilder.ref.at(-1) === 'E') {
@@ -857,12 +857,12 @@ class JsonhReader {
                 numberBuilder.ref += exponentSign;
                 // Missing digit between base specifier and exponent (e.g. `0xe+`)
                 if (hasBaseSpecifier && numberBuilder.ref.length == 4) {
-                    return { numberToken: Result.fromError(new Error("Missing digit between base specifier and exponent")), partialCharsRead: numberBuilder.ref };
+                    return { number: Result.fromError(new Error("Missing digit between base specifier and exponent")), partialCharsRead: numberBuilder.ref };
                 }
                 // Read exponent number
                 let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits);
                 if (exponentResult.isError) {
-                    return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
+                    return { number: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
             }
         }
@@ -879,12 +879,12 @@ class JsonhReader {
                 // Read exponent number
                 let exponentResult = this.#readNumberNoExponent(numberBuilder, baseDigits);
                 if (exponentResult.isError) {
-                    return { numberToken: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
+                    return { number: Result.fromError(exponentResult.error), partialCharsRead: numberBuilder.ref };
                 }
             }
         }
         // End of number
-        return { numberToken: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder.ref)), partialCharsRead: "" };
+        return { number: Result.fromValue(new JsonhToken(JsonTokenType.Number, numberBuilder.ref)), partialCharsRead: "" };
     }
     #readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier = false, hasLeadingZero = false) {
         // Leading underscore
@@ -948,21 +948,21 @@ class JsonhReader {
     }
     #readNumberOrQuotelessString() {
         // Read number
-        let number = this.#readNumber();
-        if (!number.numberToken.isError) {
+        let { number, partialCharsRead } = this.#readNumber();
+        if (!number.isError) {
             // Try read quoteless string starting with number
-            let detectQuotelessStringResult = this.#detectQuotelessString();
-            if (detectQuotelessStringResult.foundQuotelessString) {
-                return this.#readQuotelessString(number.numberToken.value.value + detectQuotelessStringResult.whitespaceChars);
+            let { foundQuotelessString, whitespaceChars } = this.#detectQuotelessString();
+            if (foundQuotelessString) {
+                return this.#readQuotelessString(number.value.value + whitespaceChars);
             }
             // Otherwise, accept number
             else {
-                return number.numberToken;
+                return number;
             }
         }
         // Read quoteless string starting with malformed number
         else {
-            return this.#readQuotelessString(number.partialCharsRead);
+            return this.#readQuotelessString(partialCharsRead);
         }
     }
     #readPrimitiveElement() {
