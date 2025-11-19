@@ -25,6 +25,32 @@ test("BasicObjectTest", () => {
     expect(tokens[3].value.jsonType).toBe(JsonTokenType.EndObject);
 });
 
+test("NestableBlockCommentTest", () => {
+    let jsonh = `
+/* */
+/=* *=/
+/==*/=**=/*==/
+/=*/==**==/*=/
+0
+`;
+    let reader = JsonhReader.fromString(jsonh);
+    let tokens = [... reader.readElement()];
+
+    for (let token of tokens) {
+        expect(token.isError).toBe(false);
+    }
+    expect(tokens[0].value.jsonType).toBe(JsonTokenType.Comment);
+    expect(tokens[0].value.value).toBe(" ");
+    expect(tokens[1].value.jsonType).toBe(JsonTokenType.Comment);
+    expect(tokens[1].value.value).toBe(" ");
+    expect(tokens[2].value.jsonType).toBe(JsonTokenType.Comment);
+    expect(tokens[2].value.value).toBe("/=**=/");
+    expect(tokens[3].value.jsonType).toBe(JsonTokenType.Comment);
+    expect(tokens[3].value.value).toBe("/==**==/");
+    expect(tokens[4].value.jsonType).toBe(JsonTokenType.Number);
+    expect(tokens[4].value.value).toBe("0");
+});
+
 /*
     Parse Tests
 */

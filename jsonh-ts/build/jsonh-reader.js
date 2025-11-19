@@ -1036,6 +1036,7 @@ class JsonhReader {
     }
     #readComment() {
         let blockComment = false;
+        let startNestCounter = 0;
         // Hash-style comment
         if (this.#readOne('#')) {
         }
@@ -1046,6 +1047,16 @@ class JsonhReader {
             // Block-style comment
             else if (this.#readOne('*')) {
                 blockComment = true;
+            }
+            // Nestable block-style comment
+            else if (this.#options.supportsVersion(JsonhVersion.V2) && this.#peek() === '=') {
+                blockComment = true;
+                while (this.#readOne('=')) {
+                    startNestCounter++;
+                }
+                if (!this.#readOne('*')) {
+                    return Result.fromError(new Error("Expected `*` after start of nesting block comment"));
+                }
             }
             else {
                 return Result.fromError(new Error("Unexpected `/`"));
@@ -1065,8 +1076,27 @@ class JsonhReader {
                     return Result.fromError(new Error("Expected end of block comment, got end of input"));
                 }
                 // End of block comment
-                if (next === '*' && this.#readOne('/')) {
-                    return Result.fromValue(new JsonhToken(JsonTokenType.Comment, commentBuilder));
+                if (next === '*') {
+                    // End of nestable block comment
+                    if (this.#options.supportsVersion(JsonhVersion.V2)) {
+                        // Count nests
+                        let endNestCounter = 0;
+                        while (endNestCounter < startNestCounter && this.#readOne('=')) {
+                            endNestCounter++;
+                        }
+                        // Partial end nestable block comment was actually part of comment
+                        if (endNestCounter < startNestCounter || this.#peek() !== '/') {
+                            commentBuilder += '*';
+                            for (; endNestCounter > 0; endNestCounter--) {
+                                commentBuilder += '=';
+                            }
+                            continue;
+                        }
+                    }
+                    // End of block comment
+                    if (this.#readOne('/')) {
+                        return Result.fromValue(new JsonhToken(JsonTokenType.Comment, commentBuilder));
+                    }
                 }
             }
             else {
