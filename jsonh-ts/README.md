@@ -11,7 +11,7 @@ Since JSONH is compatible with JSON, any JSONH syntax can be represented with eq
 
 ## JsonhTs
 
-JsonhTs is a parser implementation of [JSONH v1](https://github.com/jsonh-org/Jsonh) for TypeScript/JavaScript.
+JsonhTs is a parser implementation of [JSONH V1 & V2](https://github.com/jsonh-org/Jsonh) for TypeScript/JavaScript.
 
 ## Example
 
