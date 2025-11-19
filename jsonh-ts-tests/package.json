@@ -12,6 +12,6 @@
   "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.10"
   }
 }
