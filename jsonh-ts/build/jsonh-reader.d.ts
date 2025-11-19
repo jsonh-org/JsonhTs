@@ -34,11 +34,11 @@ declare class JsonhReader {
     /**
      * Parses a single element from a text reader.
      */
-    static parseElementfromTextReader<T = unknown>(textReader: TextReader): Result<T>;
+    static parseElementfromTextReader<T = unknown>(textReader: TextReader, options?: JsonhReaderOptions): Result<T>;
     /**
      * Parses a single element from a string.
      */
-    static parseElementFromString<T = unknown>(string: string): Result<T>;
+    static parseElementFromString<T = unknown>(string: string, options?: JsonhReaderOptions): Result<T>;
     /**
      * Parses a single element from the reader.
      */

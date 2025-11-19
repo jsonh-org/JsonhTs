@@ -20,6 +20,14 @@ declare class JsonhReaderOptions {
      * Only some tokens can be incomplete in this mode, so it should not be relied upon.
      */
     incompleteInputs: boolean;
+    /**
+     * Constructs options for a JsonhReader.
+     */
+    constructor(init?: Partial<JsonhReaderOptions>);
+    /**
+     * Returns whether version is greater than or equal to minimumVersion.
+     */
+    supportsVersion(minimumVersion: JsonhVersion): boolean;
 }
 export = JsonhReaderOptions;
 //# sourceMappingURL=jsonh-reader-options.d.ts.map

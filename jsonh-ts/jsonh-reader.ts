@@ -1,4 +1,5 @@
 import JsonhReaderOptions = require("./jsonh-reader-options.js");
+import JsonhVersion = require("./jsonh-version.js");
 import TextReader = require("./text-reader.js");
 import StringTextReader = require("./string-text-reader.js");
 import JsonhToken = require("./jsonh-token.js");
@@ -44,7 +45,17 @@ class JsonhReader {
     /**
      * Characters that cannot be used unescaped in quoteless strings.
      */
-    static readonly #reservedChars: ReadonlyArray<string> = ['\\', ',', ':', '[', ']', '{', '}', '/', '#', '"', '\''];
+    get #reservedChars(): ReadonlyArray<string> {
+        return this.#options.supportsVersion(JsonhVersion.V2) ? JsonhReader.#reservedCharsV2 : JsonhReader.#reservedCharsV1;
+    }
+    /**
+     * Characters that cannot be used unescaped in quoteless strings in JSONH V1.
+     */
+    static readonly #reservedCharsV1: ReadonlyArray<string> = ['\\', ',', ':', '[', ']', '{', '}', '/', '#', '"', '\''];
+    /**
+     * Characters that cannot be used unescaped in quoteless strings in JSONH V2.
+     */
+    static readonly #reservedCharsV2: ReadonlyArray<string> = ['\\', ',', ':', '[', ']', '{', '}', '/', '#', '"', '\'', '@'];
     /**
      * Characters that are considered newlines.
      */
@@ -86,14 +97,14 @@ class JsonhReader {
     /**
      * Parses a single element from a text reader.
      */
-    static parseElementfromTextReader<T = unknown>(textReader: TextReader): Result<T> {
-        return new JsonhReader(textReader).parseElement<T>();
+    static parseElementfromTextReader<T = unknown>(textReader: TextReader, options: JsonhReaderOptions = new JsonhReaderOptions()): Result<T> {
+        return this.fromTextReader(textReader, options).parseElement<T>();
     }
     /**
      * Parses a single element from a string.
      */
-    static parseElementFromString<T = unknown>(string: string): Result<T> {
-        return this.fromString(string).parseElement<T>();
+    static parseElementFromString<T = unknown>(string: string, options: JsonhReaderOptions = new JsonhReaderOptions()): Result<T> {
+        return this.fromString(string, options).parseElement<T>();
     }
 
     /**
@@ -601,10 +612,22 @@ class JsonhReader {
         this.#readOne(',');
     }
     #readString(): Result<JsonhToken> {
+        // Verbatim
+        let isVerbatim: boolean = false;
+        if (this.#options.supportsVersion(JsonhVersion.V2) && this.#readOne('@')) {
+            isVerbatim = true;
+
+            // Ensure string immediately follows verbatim symbol
+            let next: string | null = this.#peek();
+            if (next === null || next === '#' || next === '/' || JsonhReader.#whitespaceChars.includes(next)) {
+                return Result.fromError(new Error("Expected string to immediately follow verbatim symbol"));
+            }
+        }
+
         // Start quote
         let startQuote: string | null = this.#readAny('"', '\'');
         if (startQuote === null) {
-            return this.#readQuotelessString();
+            return this.#readQuotelessString("", isVerbatim);
         }
 
         // Count multiple start quotes
@@ -622,7 +645,7 @@ class JsonhReader {
         let endQuoteCounter: number = 0;
 
         // Read string
-        let stringBuilder = "";
+        let stringBuilder: string = "";
 
         while (true) {
             let next: string | null = this.#read();
@@ -645,11 +668,16 @@ class JsonhReader {
             }
             // Escape sequence
             else if (next === '\\') {
-                let escapeSequenceResult: Result<string> = this.#readEscapeSequence();
-                if (escapeSequenceResult.isError) {
-                    return Result.fromError(escapeSequenceResult.error);
+                if (isVerbatim) {
+                    stringBuilder += next;
                 }
-                stringBuilder += escapeSequenceResult.value;
+                else {
+                    let escapeSequenceResult: Result<string> = this.#readEscapeSequence();
+                    if (escapeSequenceResult.isError) {
+                        return Result.fromError(escapeSequenceResult.error);
+                    }
+                    stringBuilder += escapeSequenceResult.value;
+                }
             }
             // Literal character
             else {
@@ -769,8 +797,8 @@ class JsonhReader {
         // End of string
         return Result.fromValue(new JsonhToken(JsonTokenType.String, stringBuilder));
     }
-    #readQuotelessString(initialChars: string = ""): Result<JsonhToken> {
-        let isNamedLiteralPossible: boolean = true;
+    #readQuotelessString(initialChars: string = "", isVerbatim: boolean = false): Result<JsonhToken> {
+        let isNamedLiteralPossible: boolean = !isVerbatim;
 
         // Read quoteless string
         let stringBuilder: string = initialChars;
@@ -785,15 +813,20 @@ class JsonhReader {
             // Escape sequence
             if (next === '\\') {
                 this.#read();
-                let escapeSequenceResult: Result<string> = this.#readEscapeSequence();
-                if (escapeSequenceResult.isError) {
-                    return Result.fromError(escapeSequenceResult.error);
+                if (isVerbatim) {
+                    stringBuilder += next;
                 }
-                stringBuilder += escapeSequenceResult.value;
+                else {
+                    let escapeSequenceResult: Result<string> = this.#readEscapeSequence();
+                    if (escapeSequenceResult.isError) {
+                        return Result.fromError(escapeSequenceResult.error);
+                    }
+                    stringBuilder += escapeSequenceResult.value;
+                }
                 isNamedLiteralPossible = false;
             }
             // End on reserved character
-            else if (JsonhReader.#reservedChars.includes(next)) {
+            else if (this.#reservedChars.includes(next)) {
                 break;
             }
             // End on newline
@@ -864,7 +897,7 @@ class JsonhReader {
         // Found quoteless string if found backslash or non-reserved char
         let nextChar: string | null = this.#peek();
         return {
-            foundQuotelessString: nextChar !== null && (nextChar === '\\' || !JsonhReader.#reservedChars.includes(nextChar)),
+            foundQuotelessString: nextChar !== null && (nextChar === '\\' || !this.#reservedChars.includes(nextChar)),
             whitespaceChars: whitespaceBuilder
         };
     }
@@ -1061,7 +1094,7 @@ class JsonhReader {
             return this.#readNumberOrQuotelessString();
         }
         // String
-        else if (next === '"' || next === '\'') {
+        else if (next === '"' || next === '\'' || (this.#options.supportsVersion(JsonhVersion.V2) && next === '@')) {
             return this.#readString();
         }
         // Quoteless string (or named literal)

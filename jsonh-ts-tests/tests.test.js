@@ -1,4 +1,4 @@
-import { JsonhReader, JsonTokenType, JsonhNumberParser } from "../jsonh-ts/build/index.js"
+import { JsonhReader, JsonTokenType, JsonhNumberParser, JsonhReaderOptions, JsonhVersion } from "../jsonh-ts/build/index.js"
 import { expect, test } from 'vitest'
 
 /*
@@ -109,20 +109,53 @@ test("CommentTest", () => {
     expect(element[3]).toBe(4);
 });
 
+test("VerbatimStringTest", () => {
+    let jsonh = `
+{
+    a\\\\: b\\\\
+    @c\\\\: @d\\\\
+    @e\\\\: f\\\\
+}
+`;
+    let element = JsonhReader.parseElementFromString(jsonh).value;
+
+    expect(Object.keys(element).length).toBe(3);
+    expect(element["a\\"]).toBe("b\\");
+    expect(element["c\\\\"]).toBe("d\\\\");
+    expect(element["e\\\\"]).toBe("f\\");
+
+    let element2 = JsonhReader.parseElementFromString(jsonh, new JsonhReaderOptions({
+        version: JsonhVersion.V1,
+    })).value;
+    expect(Object.keys(element2).length).toBe(3);
+    expect(element2["a\\"]).toBe("b\\");
+    expect(element2["@c\\"]).toBe("@d\\");
+    expect(element2["@e\\"]).toBe("f\\");
+
+    let jsonh2 = `
+@"a\\\\": @'''b\\\\'''
+`;
+    let element3 = JsonhReader.parseElementFromString(jsonh2).value;
+
+    expect(Object.keys(element3).length).toBe(1);
+    expect(element3["a\\\\"]).toBe("b\\\\");
+});
+
 /*
     Edge Case Tests
 */
 
 test("QuotelessStringStartingWithKeywordTest", () => {
     let jsonh = `
-[nulla, null b, null]
+[nulla, null b, null, @null]
 `;
     let element = JsonhReader.parseElementFromString(jsonh).value;
 
-    expect(element.length).toBe(3);
+    expect(element.length).toBe(4);
     expect(element[0]).toBe("nulla");
     expect(element[1]).toBe("null b");
     expect(element[2]).toBe(null);
+    expect(element[3]).toBe("null");
 });
 
 test("BracelessObjectWithInvalidValueTest", () => {

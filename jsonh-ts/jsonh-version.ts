@@ -10,6 +10,10 @@ enum JsonhVersion {
      * Version 1 of the specification, released 2025/03/19.
      */
     V1 = 1,
+    /**
+     * Version 2 of the specification, released 2025/11/19.
+     */
+    V2 = 2,
 }
 
 export = JsonhVersion;

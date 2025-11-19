@@ -1,1 +1,1 @@
-{"version":3,"file":"jsonh-version.d.ts","sourceRoot":"","sources":["../jsonh-version.ts"],"names":[],"mappings":"AAAA;;GAEG;AACH,aAAK,YAAY;IACb;;OAEG;IACH,MAAM,IAAI;IACV;;OAEG;IACH,EAAE,IAAI;CACT;AAED,SAAS,YAAY,CAAC"}
+{"version":3,"file":"jsonh-version.d.ts","sourceRoot":"","sources":["../jsonh-version.ts"],"names":[],"mappings":"AAAA;;GAEG;AACH,aAAK,YAAY;IACb;;OAEG;IACH,MAAM,IAAI;IACV;;OAEG;IACH,EAAE,IAAI;IACN;;OAEG;IACH,EAAE,IAAI;CACT;AAED,SAAS,YAAY,CAAC"}
