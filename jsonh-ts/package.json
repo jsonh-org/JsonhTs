@@ -1,6 +1,6 @@
 {
   "name": "jsonh-ts",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "JSON for Humans in TypeScript/JavaScript.",
   "type": "commonjs",
   "main": "build/index.js",
