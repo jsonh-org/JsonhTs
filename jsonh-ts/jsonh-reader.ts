@@ -927,7 +927,7 @@ class JsonhReader {
                 numberBuilder.ref += exponentSign;
 
                 // Missing digit between base specifier and exponent (e.g. `0xe+`)
-                if (hasBaseSpecifier && numberBuilder.ref.length == 4) {
+                if (hasBaseSpecifier && numberBuilder.ref.length === 4) {
                     return { number: Result.fromError(new Error("Missing digit between base specifier and exponent")), partialCharsRead: numberBuilder.ref };
                 }
 
