@@ -21,6 +21,17 @@ declare class JsonhReaderOptions {
      */
     incompleteInputs: boolean;
     /**
+     * Enables/disables checks for exactly one element when parsing.
+     *
+     * ```
+     * "cat"
+     * "dog" // Error: Expected single element
+     * ```
+     *
+     * This option does not apply when reading elements, only when parsing elements.
+     */
+    parseSingleElement: boolean;
+    /**
      * Constructs options for a JsonhReader.
      */
     constructor(init?: Partial<JsonhReaderOptions>);

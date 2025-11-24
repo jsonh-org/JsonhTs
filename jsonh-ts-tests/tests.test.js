@@ -167,6 +167,20 @@ test("VerbatimStringTest", () => {
     expect(element3["a\\\\"]).toBe("b\\\\");
 });
 
+test("ParseSingleElementTest", () => {
+    let jsonh = `
+1
+2
+`;
+    let element = JsonhReader.parseElementFromString(jsonh).value;
+
+    expect(element).toBe(1);
+
+    expect(JsonhReader.parseElementFromString(jsonh, new JsonhReaderOptions({
+        parseSingleElement: true,
+    })).isError).toBe(true);
+});
+
 /*
     Edge Case Tests
 */

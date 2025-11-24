@@ -130,99 +130,108 @@ class JsonhReader {
             submitNode(node);
             currentNodes.push(node);
         };
-        for (let tokenResult of this.readElement()) {
-            // Check error
-            if (tokenResult.isError) {
-                return Result.fromError(tokenResult.error);
+        let parseNextNode = function () {
+            for (let tokenResult of this.readElement()) {
+                // Check error
+                if (tokenResult.isError) {
+                    return Result.fromError(tokenResult.error);
+                }
+                switch (tokenResult.value.jsonType) {
+                    // Null
+                    case JsonTokenType.Null: {
+                        let node = null;
+                        if (submitNode(node)) {
+                            return Result.fromValue(node);
+                        }
+                        break;
+                    }
+                    // True
+                    case JsonTokenType.True: {
+                        let node = true;
+                        if (submitNode(node)) {
+                            return Result.fromValue(node);
+                        }
+                        break;
+                    }
+                    // False
+                    case JsonTokenType.False: {
+                        let node = false;
+                        if (submitNode(node)) {
+                            return Result.fromValue(node);
+                        }
+                        break;
+                    }
+                    // String
+                    case JsonTokenType.String: {
+                        let node = tokenResult.value.value;
+                        if (submitNode(node)) {
+                            return Result.fromValue(node);
+                        }
+                        break;
+                    }
+                    // Number
+                    case JsonTokenType.Number: {
+                        // TODO
+                        let result = JsonhNumberParser.parse(tokenResult.value.value);
+                        if (result.isError) {
+                            return Result.fromError(result.error);
+                        }
+                        let node = result.value;
+                        if (submitNode(node)) {
+                            return Result.fromValue(node);
+                        }
+                        break;
+                    }
+                    // Start Object
+                    case JsonTokenType.StartObject: {
+                        let node = {};
+                        startNode(node);
+                        break;
+                    }
+                    // Start Array
+                    case JsonTokenType.StartArray: {
+                        let node = [];
+                        startNode(node);
+                        break;
+                    }
+                    // End Object/Array
+                    case JsonTokenType.EndObject:
+                    case JsonTokenType.EndArray: {
+                        // Nested node
+                        if (currentNodes.length > 1) {
+                            currentNodes.pop();
+                        }
+                        // Root node
+                        else {
+                            return Result.fromValue(currentNodes.at(-1));
+                        }
+                        break;
+                    }
+                    // Property Name
+                    case JsonTokenType.PropertyName: {
+                        currentPropertyName = tokenResult.value.value;
+                        break;
+                    }
+                    // Comment
+                    case JsonTokenType.Comment: {
+                        break;
+                    }
+                    // Not Implemented
+                    default: {
+                        return Result.fromError(new Error("Token type not implemented"));
+                    }
+                }
             }
-            switch (tokenResult.value.jsonType) {
-                // Null
-                case JsonTokenType.Null: {
-                    let node = null;
-                    if (submitNode(node)) {
-                        return Result.fromValue(node);
-                    }
-                    break;
-                }
-                // True
-                case JsonTokenType.True: {
-                    let node = true;
-                    if (submitNode(node)) {
-                        return Result.fromValue(node);
-                    }
-                    break;
-                }
-                // False
-                case JsonTokenType.False: {
-                    let node = false;
-                    if (submitNode(node)) {
-                        return Result.fromValue(node);
-                    }
-                    break;
-                }
-                // String
-                case JsonTokenType.String: {
-                    let node = tokenResult.value.value;
-                    if (submitNode(node)) {
-                        return Result.fromValue(node);
-                    }
-                    break;
-                }
-                // Number
-                case JsonTokenType.Number: {
-                    // TODO
-                    let result = JsonhNumberParser.parse(tokenResult.value.value);
-                    if (result.isError) {
-                        return Result.fromError(result.error);
-                    }
-                    let node = result.value;
-                    if (submitNode(node)) {
-                        return Result.fromValue(node);
-                    }
-                    break;
-                }
-                // Start Object
-                case JsonTokenType.StartObject: {
-                    let node = {};
-                    startNode(node);
-                    break;
-                }
-                // Start Array
-                case JsonTokenType.StartArray: {
-                    let node = [];
-                    startNode(node);
-                    break;
-                }
-                // End Object/Array
-                case JsonTokenType.EndObject:
-                case JsonTokenType.EndArray: {
-                    // Nested node
-                    if (currentNodes.length > 1) {
-                        currentNodes.pop();
-                    }
-                    // Root node
-                    else {
-                        return Result.fromValue(currentNodes.at(-1));
-                    }
-                    break;
-                }
-                // Property Name
-                case JsonTokenType.PropertyName: {
-                    currentPropertyName = tokenResult.value.value;
-                    break;
-                }
-                // Comment
-                case JsonTokenType.Comment: {
-                    break;
-                }
-                // Not Implemented
-                default: {
-                    return Result.fromError(new Error("Token type not implemented"));
-                }
-            }
+            // End of input
+            return Result.fromError(new Error("Expected token, got end of input"));
+        };
+        // Parse next element
+        let nextElement = parseNextNode.call(this);
+        // Ensure exactly one element
+        if (this.options.parseSingleElement && this.hasElement()) {
+            return Result.fromError(new Error("Expected single element"));
         }
-        // End of input
-        return Result.fromError(new Error("Expected token, got end of input"));
+        return nextElement;
     }
     /**
      * Tries to find the given property name in the reader.
@@ -271,6 +280,13 @@ class JsonhReader {
         }
         // Path not found
         return false;
+    }
+    /**
+     * Reads comments and whitespace and returns whether the reader contains another element.
+     */
+    hasElement() {
+        this.#readCommentsAndWhitespace();
+        return this.#peek() !== null;
     }
     /**
      * Reads a single element from the reader.

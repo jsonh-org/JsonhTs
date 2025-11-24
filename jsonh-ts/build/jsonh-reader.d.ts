@@ -60,6 +60,10 @@ declare class JsonhReader {
      */
     findPropertyValue(propertyName: string): boolean;
     /**
+     * Reads comments and whitespace and returns whether the reader contains another element.
+     */
+    hasElement(): boolean;
+    /**
      * Reads a single element from the reader.
      */
     readElement(): Generator<Result<JsonhToken>>;
