@@ -111,31 +111,31 @@ class JsonhReader {
      * Parses a single element from the reader.
      */
     parseElement<T = unknown>(): Result<T> {
-        let currentNodes: unknown[] = [];
+        let currentElements: unknown[] = [];
         let currentPropertyName: string | null = null;
 
-        let submitNode = function(node: unknown): boolean {
+        let submitElement = function(element: unknown): boolean {
             // Root value
-            if (currentNodes.length === 0) {
+            if (currentElements.length === 0) {
                 return true;
             }
             // Array item
             if (currentPropertyName === null) {
-                (currentNodes.at(-1) as any[]).push(node);
+                (currentElements.at(-1) as any[]).push(element);
                 return false;
             }
             // Object property
             else {
-                (currentNodes.at(-1) as any)[currentPropertyName] = node;
+                (currentElements.at(-1) as any)[currentPropertyName] = element;
                 currentPropertyName = null;
                 return false;
             }
         };
-        let startNode = function(node: unknown): void {
-            submitNode(node);
-            currentNodes.push(node);
+        let startElement = function(element: unknown): void {
+            submitElement(element);
+            currentElements.push(element);
         };
-        let parseNextNode = function(this: JsonhReader): Result<T> {
+        let parseNextElement = function(this: JsonhReader): Result<T> {
             for (let tokenResult of this.readElement()) {
                 // Check error
                 if (tokenResult.isError) {
@@ -145,33 +145,33 @@ class JsonhReader {
                 switch (tokenResult.value.jsonType) {
                     // Null
                     case JsonTokenType.Null: {
-                        let node: null = null;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node as T);
+                        let element: null = null;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element as T);
                         }
                         break;
                     }
                     // True
                     case JsonTokenType.True: {
-                        let node: boolean = true;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node as T);
+                        let element: boolean = true;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element as T);
                         }
                         break;
                     }
                     // False
                     case JsonTokenType.False: {
-                        let node: boolean = false;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node as T);
+                        let element: boolean = false;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element as T);
                         }
                         break;
                     }
                     // String
                     case JsonTokenType.String: {
-                        let node: string = tokenResult.value.value;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node as T);
+                        let element: string = tokenResult.value.value;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element as T);
                         }
                         break;
                     }
@@ -182,34 +182,34 @@ class JsonhReader {
                         if (result.isError) {
                             return Result.fromError(result.error);
                         }
-                        let node: number = result.value;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node as T);
+                        let element: number = result.value;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element as T);
                         }
                         break;
                     }
                     // Start Object
                     case JsonTokenType.StartObject: {
-                        let node: object = {};
-                        startNode(node);
+                        let element: object = {};
+                        startElement(element);
                         break;
                     }
                     // Start Array
                     case JsonTokenType.StartArray: {
-                        let node: any[] = [];
-                        startNode(node);
+                        let element: any[] = [];
+                        startElement(element);
                         break;
                     }
                     // End Object/Array
                     case JsonTokenType.EndObject:
                     case JsonTokenType.EndArray: {
-                        // Nested node
-                        if (currentNodes.length > 1) {
-                            currentNodes.pop();
+                        // Nested element
+                        if (currentElements.length > 1) {
+                            currentElements.pop();
                         }
-                        // Root node
+                        // Root element
                         else {
-                            return Result.fromValue(currentNodes.at(-1) as T);
+                            return Result.fromValue(currentElements.at(-1) as T);
                         }
                         break;
                     }
@@ -234,7 +234,7 @@ class JsonhReader {
         }
 
         // Parse next element
-        let nextElement: Result<T> = parseNextNode.call(this);
+        let nextElement: Result<T> = parseNextElement.call(this);
 
         // Ensure exactly one element
         if (this.options.parseSingleElement && this.hasElement()) {
