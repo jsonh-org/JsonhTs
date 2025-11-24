@@ -171,7 +171,6 @@ class JsonhReader {
                     }
                     // Number
                     case JsonTokenType.Number: {
-                        // TODO
                         let result = JsonhNumberParser.parse(tokenResult.value.value);
                         if (result.isError) {
                             return Result.fromError(result.error);
