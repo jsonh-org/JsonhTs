@@ -135,8 +135,8 @@ class JsonhReader {
             submitElement(element);
             currentElements.push(element);
         };
-        let parseNextElement = function(this: JsonhReader): Result<T> {
-            for (let tokenResult of this.readElement()) {
+        let parseNextElement = function(_this: JsonhReader): Result<T> {
+            for (let tokenResult of _this.readElement()) {
                 // Check error
                 if (tokenResult.isError) {
                     return Result.fromError(tokenResult.error);
@@ -234,7 +234,7 @@ class JsonhReader {
         }
 
         // Parse next element
-        let nextElement: Result<T> = parseNextElement.call(this);
+        let nextElement: Result<T> = parseNextElement(this);
 
         // Ensure exactly one element
         if (this.options.parseSingleElement && this.hasElement()) {

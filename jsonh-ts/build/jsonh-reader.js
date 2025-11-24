@@ -107,31 +107,31 @@ class JsonhReader {
      * Parses a single element from the reader.
      */
     parseElement() {
-        let currentNodes = [];
+        let currentElements = [];
         let currentPropertyName = null;
-        let submitNode = function (node) {
+        let submitElement = function (element) {
             // Root value
-            if (currentNodes.length === 0) {
+            if (currentElements.length === 0) {
                 return true;
             }
             // Array item
             if (currentPropertyName === null) {
-                currentNodes.at(-1).push(node);
+                currentElements.at(-1).push(element);
                 return false;
             }
             // Object property
             else {
-                currentNodes.at(-1)[currentPropertyName] = node;
+                currentElements.at(-1)[currentPropertyName] = element;
                 currentPropertyName = null;
                 return false;
             }
         };
-        let startNode = function (node) {
-            submitNode(node);
-            currentNodes.push(node);
+        let startElement = function (element) {
+            submitElement(element);
+            currentElements.push(element);
         };
-        let parseNextNode = function () {
-            for (let tokenResult of this.readElement()) {
+        let parseNextElement = function (_this) {
+            for (let tokenResult of _this.readElement()) {
                 // Check error
                 if (tokenResult.isError) {
                     return Result.fromError(tokenResult.error);
@@ -139,33 +139,33 @@ class JsonhReader {
                 switch (tokenResult.value.jsonType) {
                     // Null
                     case JsonTokenType.Null: {
-                        let node = null;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node);
+                        let element = null;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element);
                         }
                         break;
                     }
                     // True
                     case JsonTokenType.True: {
-                        let node = true;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node);
+                        let element = true;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element);
                         }
                         break;
                     }
                     // False
                     case JsonTokenType.False: {
-                        let node = false;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node);
+                        let element = false;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element);
                         }
                         break;
                     }
                     // String
                     case JsonTokenType.String: {
-                        let node = tokenResult.value.value;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node);
+                        let element = tokenResult.value.value;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element);
                         }
                         break;
                     }
@@ -176,34 +176,34 @@ class JsonhReader {
                         if (result.isError) {
                             return Result.fromError(result.error);
                         }
-                        let node = result.value;
-                        if (submitNode(node)) {
-                            return Result.fromValue(node);
+                        let element = result.value;
+                        if (submitElement(element)) {
+                            return Result.fromValue(element);
                         }
                         break;
                     }
                     // Start Object
                     case JsonTokenType.StartObject: {
-                        let node = {};
-                        startNode(node);
+                        let element = {};
+                        startElement(element);
                         break;
                     }
                     // Start Array
                     case JsonTokenType.StartArray: {
-                        let node = [];
-                        startNode(node);
+                        let element = [];
+                        startElement(element);
                         break;
                     }
                     // End Object/Array
                     case JsonTokenType.EndObject:
                     case JsonTokenType.EndArray: {
-                        // Nested node
-                        if (currentNodes.length > 1) {
-                            currentNodes.pop();
+                        // Nested element
+                        if (currentElements.length > 1) {
+                            currentElements.pop();
                         }
-                        // Root node
+                        // Root element
                         else {
-                            return Result.fromValue(currentNodes.at(-1));
+                            return Result.fromValue(currentElements.at(-1));
                         }
                         break;
                     }
@@ -226,7 +226,7 @@ class JsonhReader {
             return Result.fromError(new Error("Expected token, got end of input"));
         };
         // Parse next element
-        let nextElement = parseNextNode.call(this);
+        let nextElement = parseNextElement(this);
         // Ensure exactly one element
         if (this.options.parseSingleElement && this.hasElement()) {
             return Result.fromError(new Error("Expected single element"));
