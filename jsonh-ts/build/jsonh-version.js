@@ -5,7 +5,7 @@
 var JsonhVersion;
 (function (JsonhVersion) {
     /**
-     * Indicates that the latest version should be used (currently {@link V1}).
+     * Indicates that the latest version should be used (currently {@link V2}).
      */
     JsonhVersion[JsonhVersion["Latest"] = 0] = "Latest";
     /**

@@ -3,7 +3,7 @@
  */
 declare enum JsonhVersion {
     /**
-     * Indicates that the latest version should be used (currently {@link V1}).
+     * Indicates that the latest version should be used (currently {@link V2}).
      */
     Latest = 0,
     /**
