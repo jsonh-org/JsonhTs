@@ -179,6 +179,16 @@ test("ParseSingleElementTest", () => {
     expect(JsonhReader.parseElementFromString(jsonh, new JsonhReaderOptions({
         parseSingleElement: true,
     })).isError).toBe(true);
+
+    let jsonh2 = `
+1
+
+
+`
+
+    expect(JsonhReader.parseElementFromString(jsonh2, new JsonhReaderOptions({
+        parseSingleElement: true,
+    })).isError).toBe(false);
 });
 
 /*

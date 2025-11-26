@@ -236,8 +236,12 @@ class JsonhReader {
         let nextElement: Result<T> = parseNextElement(this);
 
         // Ensure exactly one element
-        if (this.options.parseSingleElement && this.hasElement()) {
-            return Result.fromError(new Error("Expected single element"));
+        if (this.options.parseSingleElement) {
+            for (let token of this.readEndOfElements()) {
+                if (token.isError) {
+                    return Result.fromError(token.error);
+                }
+            }
         }
 
         return nextElement;
@@ -294,11 +298,32 @@ class JsonhReader {
         return false;
     }
     /**
-     * Reads comments and whitespace and returns whether the reader contains another element.
+     * Reads whitespace and returns whether the reader contains another token.
      */
-    hasElement(): boolean {
-        this.#readCommentsAndWhitespace();
+    hasToken(): boolean {
+        // Whitespace
+        this.#readWhitespace();
+
+        // Peek char
         return this.#peek() !== null;
+    }
+    /**
+     * Reads comments and whitespace and errors if the reader contains another element.
+     */
+    *readEndOfElements(): Generator<Result<JsonhToken>> {
+        // Comments & whitespace
+        for (let token of this.#readCommentsAndWhitespace()) {
+            if (token.isError) {
+                yield token;
+                return;
+            }
+            yield token;
+        }
+
+        // Peek char
+        if (this.#peek() !== null) {
+            yield Result.fromError(new Error("Expected end of elements"));
+        }
     }
     /**
      * Reads a single element from the reader.
@@ -313,7 +338,7 @@ class JsonhReader {
             yield token;
         }
 
-        // Peek result
+        // Peek char
         let next: string | null = this.#peek();
         if (next === null) {
             yield Result.fromError(new Error("Expected token, got end of input"));
