@@ -390,3 +390,11 @@ test("LeadingZeroWithExponentTest", () => {
 
     expect(JsonhReader.parseElementFromString(jsonh3).value).toStrictEqual(["0x0e+", "0b0e+_1"]);
 });
+
+test("ErrorInBracelessPropertyNameTest", () => {
+    let jsonh = `
+a /
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).isError).toBe(true);
+});
