@@ -1157,7 +1157,12 @@ class JsonhReader {
 
             // Comment
             if (next === '#' || next === '/') {
-                yield this.#readComment();
+                let comment: Result<JsonhToken, Error> = this.#readComment();
+                if (comment.isError) {
+                    yield comment;
+                    return;
+                }
+                yield comment;
             }
             // End of comments
             else {
