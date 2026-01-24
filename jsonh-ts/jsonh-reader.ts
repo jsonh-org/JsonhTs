@@ -374,18 +374,12 @@ class JsonhReader {
             }
 
             // Detect braceless object from property name
-            if (token.value.jsonType === JsonTokenType.String) {
-                for (let token2 of this.#readBracelessObjectOrEndOfString(token.value)) {
-                    if (token2.isError) {
-                        yield token2;
-                        return;
-                    }
+            for (let token2 of this.#readBracelessObjectOrEndOfPrimitive(token.value)) {
+                if (token2.isError) {
                     yield token2;
+                    return;
                 }
-            }
-            // Primitive value
-            else {
-                yield token;
+                yield token2;
             }
         }
     }
@@ -488,7 +482,7 @@ class JsonhReader {
             }
         }
     }
-    *#readBracelessObjectOrEndOfString(stringToken: JsonhToken): Generator<Result<JsonhToken>> {
+    *#readBracelessObjectOrEndOfPrimitive(primitiveToken: JsonhToken): Generator<Result<JsonhToken>> {
         // Comments & whitespace
         let propertyNameTokens: JsonhToken[] = [];
         for (let commentOrWhitespaceToken of this.#readCommentsAndWhitespace()) {
@@ -499,20 +493,20 @@ class JsonhReader {
             propertyNameTokens.push(commentOrWhitespaceToken.value);
         }
 
-        // String
+        // Primitive
         if (!this.#readOne(':')) {
-            // String
-            yield Result.fromValue(stringToken);
+            // Primitive
+            yield Result.fromValue(primitiveToken);
             // Comments & whitespace
             for (let commentOrWhitespaceToken of propertyNameTokens) {
                 yield Result.fromValue(commentOrWhitespaceToken);
             }
-            // End of string
+            // End of primitive
             return;
         }
 
         // Property name
-        propertyNameTokens.push(new JsonhToken(JsonTokenType.PropertyName, stringToken.value));
+        propertyNameTokens.push(new JsonhToken(JsonTokenType.PropertyName, primitiveToken.value));
 
         // Braceless object
         for (let objectToken of this.#readBracelessObject(propertyNameTokens)) {
@@ -911,13 +905,13 @@ class JsonhReader {
         // Match named literal
         if (isNamedLiteralPossible) {
             if (stringBuilder === "null") {
-                return Result.fromValue(new JsonhToken(JsonTokenType.Null));
+                return Result.fromValue(new JsonhToken(JsonTokenType.Null, "null"));
             }
             else if (stringBuilder === "true") {
-                return Result.fromValue(new JsonhToken(JsonTokenType.True));
+                return Result.fromValue(new JsonhToken(JsonTokenType.True, "true"));
             }
             else if (stringBuilder === "false") {
-                return Result.fromValue(new JsonhToken(JsonTokenType.False));
+                return Result.fromValue(new JsonhToken(JsonTokenType.False, "false"));
             }
         }
 

@@ -398,3 +398,23 @@ a /
 
     expect(JsonhReader.parseElementFromString(jsonh).isError).toBe(true);
 });
+
+test("FirstPropertyNameInBracelessObjectTest", () => {
+    let jsonh = `
+a: b
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual({ "a": "b" });
+
+    let jsonh2 = `
+0: b
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh2).value).toStrictEqual({ "0": "b" });
+
+    let jsonh3 = `
+true: b
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh3).value).toStrictEqual({ "true": "b" });
+});
