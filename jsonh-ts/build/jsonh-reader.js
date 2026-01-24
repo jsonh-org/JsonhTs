@@ -458,26 +458,30 @@ class JsonhReader {
     }
     *#readBracelessObjectOrEndOfPrimitive(primitiveToken) {
         // Comments & whitespace
-        let propertyNameTokens = [];
+        let propertyNameTokens = null;
         for (let commentOrWhitespaceToken of this.#readCommentsAndWhitespace()) {
             if (commentOrWhitespaceToken.isError) {
                 yield commentOrWhitespaceToken;
                 return;
             }
+            propertyNameTokens ??= [];
             propertyNameTokens.push(commentOrWhitespaceToken.value);
         }
-        // String
+        // Primitive
         if (!this.#readOne(':')) {
-            // String
+            // Primitive
             yield Result.fromValue(primitiveToken);
             // Comments & whitespace
-            for (let commentOrWhitespaceToken of propertyNameTokens) {
-                yield Result.fromValue(commentOrWhitespaceToken);
+            if (propertyNameTokens !== null) {
+                for (let commentOrWhitespaceToken of propertyNameTokens) {
+                    yield Result.fromValue(commentOrWhitespaceToken);
+                }
             }
-            // End of string
+            // End of primitive
             return;
         }
         // Property name
+        propertyNameTokens ??= [];
         propertyNameTokens.push(new JsonhToken(JsonTokenType.PropertyName, primitiveToken.value));
         // Braceless object
         for (let objectToken of this.#readBracelessObject(propertyNameTokens)) {

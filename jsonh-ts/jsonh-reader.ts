@@ -484,12 +484,13 @@ class JsonhReader {
     }
     *#readBracelessObjectOrEndOfPrimitive(primitiveToken: JsonhToken): Generator<Result<JsonhToken>> {
         // Comments & whitespace
-        let propertyNameTokens: JsonhToken[] = [];
+        let propertyNameTokens: JsonhToken[] | null = null;
         for (let commentOrWhitespaceToken of this.#readCommentsAndWhitespace()) {
             if (commentOrWhitespaceToken.isError) {
                 yield commentOrWhitespaceToken;
                 return;
             }
+            propertyNameTokens ??= [];
             propertyNameTokens.push(commentOrWhitespaceToken.value);
         }
 
@@ -498,14 +499,17 @@ class JsonhReader {
             // Primitive
             yield Result.fromValue(primitiveToken);
             // Comments & whitespace
-            for (let commentOrWhitespaceToken of propertyNameTokens) {
-                yield Result.fromValue(commentOrWhitespaceToken);
+            if (propertyNameTokens !== null) {
+                for (let commentOrWhitespaceToken of propertyNameTokens) {
+                    yield Result.fromValue(commentOrWhitespaceToken);
+                }
             }
             // End of primitive
             return;
         }
 
         // Property name
+        propertyNameTokens ??= [];
         propertyNameTokens.push(new JsonhToken(JsonTokenType.PropertyName, primitiveToken.value));
 
         // Braceless object
