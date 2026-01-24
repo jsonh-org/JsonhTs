@@ -124,8 +124,9 @@ class JsonhNumberParser {
         // Get fraction leading zeroes
         let fractionLeadingZeroes = "";
         for (let index = 0; index < fractionalPart.length; index++) {
-            if (fractionalPart[index] === '0') {
-                fractionLeadingZeroes += "0";
+            let char = fractionalPart.at(index);
+            if (char === '0') {
+                fractionLeadingZeroes += '0';
             }
             else {
                 break;
