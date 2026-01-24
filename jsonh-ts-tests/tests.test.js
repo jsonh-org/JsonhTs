@@ -418,3 +418,11 @@ true: b
 
     expect(JsonhReader.parseElementFromString(jsonh3).value).toStrictEqual({ "true": "b" });
 });
+
+test("FractionLeadingZeroesTest", () => {
+    let jsonh = `
+0.04
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0.04);
+});

@@ -133,8 +133,19 @@ class JsonhNumberParser {
             return fraction;
         }
 
+        // Get fraction leading zeroes
+        let fractionLeadingZeroes: string = "";
+        for (let index: number = 0; index < fractionalPart.length; index++) {
+            if (fractionalPart[index] === '0') {
+                fractionLeadingZeroes += "0";
+            }
+            else {
+                break;
+            }
+        }
+
         // Combine whole and fraction
-        return Result.fromValue(Number.parseFloat(whole.value + '.' + fraction.value));
+        return Result.fromValue(Number.parseFloat(whole.value + '.' + fractionLeadingZeroes + fraction.value));
     }
     /**
      * Converts a whole number (e.g. `12345`) from the given base (e.g. `01234567`) to a base-10 integer.
