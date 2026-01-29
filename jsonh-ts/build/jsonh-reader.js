@@ -43,11 +43,11 @@ class JsonhReader {
         return this.#charCounter;
     }
     /**
-     * The current depth level of the reader.
+     * The current recursion depth of the reader.
      */
     #depth;
     /**
-     * The current depth level of the reader.
+     * The current recursion depth of the reader.
      */
     get depth() {
         return this.#depth;

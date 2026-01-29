@@ -20,7 +20,7 @@ declare class JsonhReader {
      */
     get charCounter(): number;
     /**
-     * The current depth level of the reader.
+     * The current recursion depth of the reader.
      */
     get depth(): number;
     /**
