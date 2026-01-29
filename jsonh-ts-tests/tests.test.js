@@ -456,3 +456,11 @@ test("UnderscoreAfterLeadingZeroTest", () => {
 
     expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0);
 });
+
+test("UnderscoreAfterLeadingZeroTest", () => {
+    let jsonh = `
+[0_.0, 0._0]
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual(["0_.0", "0._0"]);
+});

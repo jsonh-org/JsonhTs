@@ -1118,6 +1118,11 @@ class JsonhReader {
             }
             // Dot
             else if (next === '.') {
+                // Disallow dot preceding underscore
+                if (numberBuilder.ref.length >= 1 && numberBuilder.ref.at(-1)! === '_') {
+                    return Result.fromError(new Error("`.` must not follow `_` in number"));
+                }
+
                 this.#read();
                 numberBuilder.ref += next;
                 isEmpty = false;
@@ -1130,6 +1135,11 @@ class JsonhReader {
             }
             // Underscore
             else if (next === '_') {
+                // Disallow underscore following dot
+                if (numberBuilder.ref.length >= 1 && numberBuilder.ref.at(-1)! === '.') {
+                    return Result.fromError(new Error("`_` must not follow `.` in number"));
+                }
+
                 this.#read();
                 numberBuilder.ref += next;
                 isEmpty = false;
