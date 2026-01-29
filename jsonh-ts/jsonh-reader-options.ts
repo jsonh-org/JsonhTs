@@ -9,6 +9,17 @@ class JsonhReaderOptions {
      */
     version: JsonhVersion = JsonhVersion.Latest;
     /**
+     * Enables/disables checks for exactly one element when parsing.
+     * 
+     * ```
+     * "cat"
+     * "dog" // Error: Expected single element
+     * ```
+     * 
+     * This option does not apply when reading elements, only when parsing elements.
+     */
+    parseSingleElement: boolean = false;
+    /**
      * Enables/disables parsing unclosed inputs.
      * 
      * ```
@@ -21,17 +32,6 @@ class JsonhReaderOptions {
      * Only some tokens can be incomplete in this mode, so it should not be relied upon.
      */
     incompleteInputs: boolean = false;
-    /**
-     * Enables/disables checks for exactly one element when parsing.
-     * 
-     * ```
-     * "cat"
-     * "dog" // Error: Expected single element
-     * ```
-     * 
-     * This option does not apply when reading elements, only when parsing elements.
-     */
-    parseSingleElement: boolean = false;
 
     /**
      * Constructs options for a JsonhReader.
