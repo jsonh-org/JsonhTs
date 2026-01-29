@@ -426,3 +426,25 @@ test("FractionLeadingZeroesTest", () => {
 
     expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0.04);
 });
+
+test("MaxDepthTest", () => {
+    let jsonh = `
+{
+  a: {
+    b: {
+      c: ""
+    }
+    d: {
+    }
+  }
+}
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh, new JsonhReaderOptions({
+        maxDepth: 2,
+    })).isError).toBe(true);
+
+    expect(JsonhReader.parseElementFromString(jsonh, new JsonhReaderOptions({
+        maxDepth: 3,
+    })).isError).toBe(false);
+});

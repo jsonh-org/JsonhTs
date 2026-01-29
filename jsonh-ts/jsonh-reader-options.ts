@@ -20,6 +20,23 @@ class JsonhReaderOptions {
      */
     parseSingleElement: boolean = false;
     /**
+     * Sets the maximum recursion depth allowed when reading JSONH.
+     * 
+     * ```
+     * // Max depth: 2
+     * {
+     *   a: {
+     *     b: {
+     *       // Error: Exceeded max depth
+     *     }
+     *   }
+     * }
+     * ```
+     * 
+     * The default value is 64 to defend against DOS attacks.
+     */
+    maxDepth: number = 64;
+    /**
      * Enables/disables parsing unclosed inputs.
      * 
      * ```

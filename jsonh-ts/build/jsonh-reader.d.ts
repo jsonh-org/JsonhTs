@@ -20,6 +20,10 @@ declare class JsonhReader {
      */
     get charCounter(): number;
     /**
+     * The current depth level of the reader.
+     */
+    get depth(): number;
+    /**
      * Constructs a reader that reads JSONH from a text reader.
      */
     private constructor();

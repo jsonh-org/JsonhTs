@@ -41,6 +41,16 @@ class JsonhReader {
     get charCounter(): number {
         return this.#charCounter;
     }
+    /**
+     * The current depth level of the reader.
+     */
+    #depth: number;
+    /**
+     * The current depth level of the reader.
+     */
+    get depth(): number {
+        return this.#depth;
+    }
 
     /**
      * Characters that cannot be used unescaped in quoteless strings.
@@ -80,6 +90,7 @@ class JsonhReader {
         this.#textReader = textReader;
         this.#options = options;
         this.#charCounter = 0;
+        this.#depth = 0;
     }
     /**
      * Constructs a reader that reads JSONH from a text reader.
@@ -397,8 +408,15 @@ class JsonhReader {
             }
             return;
         }
-        // Start object
+        // Start of object
         yield Result.fromValue(new JsonhToken(JsonTokenType.StartObject));
+        this.#depth++;
+
+        // Check exceeded max depth
+        if (this.#depth > this.#options.maxDepth) {
+            yield Result.fromError(new Error("Exceeded max depth"));
+            return;
+        }
 
         while (true) {
             // Comments & whitespace
@@ -414,6 +432,7 @@ class JsonhReader {
             if (next === null) {
                 // End of incomplete object
                 if (this.#options.incompleteInputs) {
+                    this.#depth--;
                     yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                     return;
                 }
@@ -426,6 +445,7 @@ class JsonhReader {
             if (next === '}') {
                 // End of object
                 this.#read();
+                this.#depth--;
                 yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                 return;
             }
@@ -444,6 +464,13 @@ class JsonhReader {
     *#readBracelessObject(propertyNameTokens: Iterable<JsonhToken> | null = null): Generator<Result<JsonhToken>> {
         // Start of object
         yield Result.fromValue(new JsonhToken(JsonTokenType.StartObject));
+        this.#depth++;
+
+        // Check exceeded max depth
+        if (this.#depth > this.#options.maxDepth) {
+            yield Result.fromError(new Error("Exceeded max depth"));
+            return;
+        }
 
         // Initial tokens
         if (propertyNameTokens !== null) {
@@ -468,6 +495,7 @@ class JsonhReader {
 
             if (this.#peek() === null) {
                 // End of braceless object
+                this.#depth--;
                 yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                 return;
             }
@@ -605,6 +633,13 @@ class JsonhReader {
         }
         // Start of array
         yield Result.fromValue(new JsonhToken(JsonTokenType.StartArray));
+        this.#depth++;
+
+        // Check exceeded max depth
+        if (this.#depth > this.#options.maxDepth) {
+            yield Result.fromError(new Error("Exceeded max depth"));
+            return;
+        }
 
         while (true) {
             // Comments & whitespace
@@ -620,6 +655,7 @@ class JsonhReader {
             if (next === null) {
                 // End of incomplete array
                 if (this.#options.incompleteInputs) {
+                    this.#depth--;
                     yield Result.fromValue(new JsonhToken(JsonTokenType.EndArray));
                     return;
                 }
@@ -632,6 +668,7 @@ class JsonhReader {
             if (next === ']') {
                 // End of array
                 this.#read();
+                this.#depth--;
                 yield Result.fromValue(new JsonhToken(JsonTokenType.EndArray));
                 return;
             }

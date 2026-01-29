@@ -9,6 +9,34 @@ class JsonhReaderOptions {
      */
     version = JsonhVersion.Latest;
     /**
+     * Enables/disables checks for exactly one element when parsing.
+     *
+     * ```
+     * "cat"
+     * "dog" // Error: Expected single element
+     * ```
+     *
+     * This option does not apply when reading elements, only when parsing elements.
+     */
+    parseSingleElement = false;
+    /**
+       * Sets the maximum recursion depth allowed when reading JSONH.
+       *
+       * ```
+       * // Max depth: 2
+       * {
+       *   a: {
+       *     b: {
+       *       // Error: Exceeded max depth
+       *     }
+       *   }
+       * }
+       * ```
+       *
+       * The default value is 64 to defend against DOS attacks.
+     */
+    maxDepth = 64;
+    /**
      * Enables/disables parsing unclosed inputs.
      *
      * ```
@@ -21,17 +49,6 @@ class JsonhReaderOptions {
      * Only some tokens can be incomplete in this mode, so it should not be relied upon.
      */
     incompleteInputs = false;
-    /**
-     * Enables/disables checks for exactly one element when parsing.
-     *
-     * ```
-     * "cat"
-     * "dog" // Error: Expected single element
-     * ```
-     *
-     * This option does not apply when reading elements, only when parsing elements.
-     */
-    parseSingleElement = false;
     /**
      * Constructs options for a JsonhReader.
      */
