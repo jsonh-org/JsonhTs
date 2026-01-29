@@ -448,3 +448,11 @@ test("MaxDepthTest", () => {
         maxDepth: 3,
     })).isError).toBe(false);
 });
+
+test("UnderscoreAfterLeadingZeroTest", () => {
+    let jsonh = `
+0_0
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe(0);
+});

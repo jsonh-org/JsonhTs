@@ -1004,7 +1004,7 @@ class JsonhReader {
     }
     #readNumberNoExponent(numberBuilder, baseDigits, hasBaseSpecifier = false, hasLeadingZero = false) {
         // Leading underscore
-        if (!hasBaseSpecifier && this.#peek() === '_') {
+        if (!hasBaseSpecifier && !hasLeadingZero && this.#peek() === '_') {
             return Result.fromError(new Error("Leading `_` in number"));
         }
         let isFraction = false;

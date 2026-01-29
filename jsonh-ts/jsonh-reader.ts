@@ -1091,7 +1091,7 @@ class JsonhReader {
     }
     #readNumberNoExponent(numberBuilder: { ref: string }, baseDigits: string, hasBaseSpecifier: boolean = false, hasLeadingZero: boolean = false): Result {
         // Leading underscore
-        if (!hasBaseSpecifier && this.#peek() === '_') {
+        if (!hasBaseSpecifier && !hasLeadingZero && this.#peek() === '_') {
             return Result.fromError(new Error("Leading `_` in number"));
         }
 
