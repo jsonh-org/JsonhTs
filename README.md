@@ -60,7 +60,7 @@ let jsonh: string = `
     this is: awesome
 }
 `;
-let element: string = JsonhReader.parseElementFromString<string>(jsonh).value;
+let element: object = JsonhReader.parseElementFromString<object>(jsonh).value;
 ```
 
 ```js
