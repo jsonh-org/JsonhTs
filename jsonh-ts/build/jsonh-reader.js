@@ -238,10 +238,12 @@ class JsonhReader {
         // Parse next element
         let nextElement = parseNextElement(this);
         // Ensure exactly one element
-        if (this.options.parseSingleElement) {
-            for (let token of this.readEndOfElements()) {
-                if (token.isError) {
-                    return Result.fromError(token.error);
+        if (nextElement.isValue) {
+            if (this.options.parseSingleElement) {
+                for (let token of this.readEndOfElements()) {
+                    if (token.isError) {
+                        return Result.fromError(token.error);
+                    }
                 }
             }
         }
