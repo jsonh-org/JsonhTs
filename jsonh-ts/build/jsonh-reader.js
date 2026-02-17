@@ -1227,20 +1227,30 @@ class JsonhReader {
         }
     }
     #readHexSequence(length) {
-        let hexChars = "";
+        if (!(length <= 8)) {
+            throw new Error("(length <= 8) was false");
+        }
+        let value = 0;
         for (let index = 0; index < length; index++) {
             let next = this.#read();
             // Hex digit
             if (next !== null && ((next >= "0" && next <= "9") || (next >= "A" && next <= "F") || (next >= "a" && next <= "f"))) {
-                hexChars += next;
+                // Get hex digit
+                let digit = next.charCodeAt(0);
+                // Convert hex digit to integer
+                let integer = (digit >= 65 /*A*/ && digit <= 70 /*F*/) ? digit - 65 /*A*/ + 10 :
+                    (digit >= 97 /*a*/ && digit <= 102 /*f*/) ? digit - 97 /*a*/ + 10 :
+                        digit - 48 /*0*/;
+                // Aggregate digit into value
+                value = (value * 16) + integer;
             }
             // Unexpected char
             else {
                 return Result.fromError(new Error("Incorrect number of hexadecimal digits in unicode escape sequence"));
             }
         }
-        // Parse unicode character from hex digits
-        return Result.fromValue(Number.parseInt(hexChars, 16));
+        // Return aggregated value
+        return Result.fromValue(value);
     }
     #readEscapeSequence() {
         let escapeChar = this.#read();

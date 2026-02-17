@@ -1336,14 +1336,26 @@ class JsonhReader {
         }
     }
     #readHexSequence(length: number): Result<number> {
-        let hexChars: string = "";
+        if (!(length <= 8)) {
+            throw new Error("(length <= 8) was false");
+        }
+
+        let value: number = 0;
 
         for (let index: number = 0; index < length; index++) {
             let next: string | null = this.#read();
 
             // Hex digit
             if (next !== null && ((next >= "0" && next <= "9") || (next >= "A" && next <= "F") || (next >= "a" && next <= "f"))) {
-                hexChars += next;
+                // Get hex digit
+                let digit: number = next.charCodeAt(0)!;
+                // Convert hex digit to integer
+                let integer: number =
+                    (digit >= 65 /*A*/ && digit <= 70 /*F*/) ? digit - 65 /*A*/ + 10 :
+                        (digit >= 97 /*a*/ && digit <= 102 /*f*/) ? digit - 97 /*a*/ + 10 :
+                            digit - 48 /*0*/;
+                // Aggregate digit into value
+                value = (value * 16) + integer;
             }
             // Unexpected char
             else {
@@ -1351,8 +1363,8 @@ class JsonhReader {
             }
         }
 
-        // Parse unicode character from hex digits
-        return Result.fromValue(Number.parseInt(hexChars, 16));
+        // Return aggregated value
+        return Result.fromValue(value);
     }
     #readEscapeSequence(): Result<string> {
         let escapeChar: string | null = this.#read();
