@@ -1120,7 +1120,7 @@ class JsonhReader {
             }
             // Dot
             else if (next === '.') {
-                // Disallow dot preceding underscore
+                // Disallow dot following underscore
                 if (numberBuilder.ref.length >= 1 && numberBuilder.ref.at(-1)! === '_') {
                     return Result.fromError(new Error("`.` must not follow `_` in number"));
                 }
