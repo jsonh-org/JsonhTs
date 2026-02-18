@@ -464,3 +464,14 @@ test("UnderscoreAfterLeadingZeroTest", () => {
 
     expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual(["0_.0", "0._0"]);
 });
+
+test("MultiQuotedStringWithNonAsciiIndentsTest", () => {
+    let jsonh = `
+
+"""
+　　 a
+　　"""
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual(" a");
+});
