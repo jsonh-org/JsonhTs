@@ -137,8 +137,8 @@ class JsonhNumberParser {
             }
         }
         // Combine whole and fraction
-        let whole_digits = whole.value.toString();
-        let fraction_digits = fraction.value.toString();
+        let whole_digits = whole.value.toLocaleString("en-US", { useGrouping: false });
+        let fraction_digits = fraction.value.toLocaleString("en-US", { useGrouping: false });
         return Result.fromValue(Number.parseFloat(whole_digits + '.' + fractionLeadingZeroes + fraction_digits));
     }
     /**
