@@ -112,6 +112,11 @@ class JsonhNumberParser {
      * Converts a fractional number (e.g. `123.45`) from the given base (e.g. `01234567`) to a base-10 real.
      */
     static #parseFractionalNumber(digits: string, baseDigits: string): Result<number> {
+        // Optimization for base-10 digits
+        if (baseDigits === "0123456789") {
+            return Result.fromValue(Number.parseFloat(digits));
+        }
+
         // Find dot
         let dotIndex: number = digits.indexOf('.');
         // If no dot then normalize integer
@@ -154,6 +159,11 @@ class JsonhNumberParser {
      * Converts a whole number (e.g. `12345`) from the given base (e.g. `01234567`) to a base-10 integer.
      */
     static #parseWholeNumber(digits: string, baseDigits: string): Result<number> {
+        // Optimization for base-10 digits
+        if (baseDigits === "0123456789") {
+            return Result.fromValue(Number.parseInt(digits));
+        }
+
         // Get sign
         let sign: number = 1;
         if (digits.startsWith('-')) {
