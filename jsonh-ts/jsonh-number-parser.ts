@@ -121,22 +121,22 @@ class JsonhNumberParser {
 
         // Get parts of number
         let wholePart: string = digits.slice(0, dotIndex);
-        let fractionalPart: string = digits.slice(dotIndex + 1);
+        let fractionPart: string = digits.slice(dotIndex + 1);
 
         // Parse parts of number
         let whole: Result<number> = this.#parseWholeNumber(wholePart, baseDigits);
         if (whole.isError) {
             return whole;
         }
-        let fraction: Result<number> = this.#parseWholeNumber(fractionalPart, baseDigits);
+        let fraction: Result<number> = this.#parseWholeNumber(fractionPart, baseDigits);
         if (fraction.isError) {
             return fraction;
         }
 
         // Get fraction leading zeroes
         let fractionLeadingZeroes: string = "";
-        for (let index: number = 0; index < fractionalPart.length; index++) {
-            let char: string = fractionalPart.at(index)!;
+        for (let index: number = 0; index < fractionPart.length; index++) {
+            let char: string = fractionPart.at(index)!;
             if (char === '0') {
                 fractionLeadingZeroes += '0';
             }
@@ -146,7 +146,9 @@ class JsonhNumberParser {
         }
 
         // Combine whole and fraction
-        return Result.fromValue(Number.parseFloat(whole.value + '.' + fractionLeadingZeroes + fraction.value));
+        let whole_digits: String = whole.value.toString();
+        let fraction_digits: String = fraction.value.toString();
+        return Result.fromValue(Number.parseFloat(whole_digits + '.' + fractionLeadingZeroes + fraction_digits));
     }
     /**
      * Converts a whole number (e.g. `12345`) from the given base (e.g. `01234567`) to a base-10 integer.

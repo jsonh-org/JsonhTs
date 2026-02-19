@@ -475,3 +475,24 @@ test("MultiQuotedStringWithNonAsciiIndentsTest", () => {
 
     expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual(" a");
 });
+
+
+test("JoinCrLfInMultiQuotedStringTest", () => {
+    let jsonh = " ''' \\r\\nHello\r\n ''' ";
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toBe("Hello");
+});
+
+test("MassiveNumbersTest", () => {
+    let jsonh = `
+    [
+        0x999_999_999_999_999_999_999_999,
+        0x999_999_999_999_999_999_999_999.0,
+    ]
+    `;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual([
+        47_536_897_508_558_602_556_126_370_201.0,
+        47_536_897_508_558_602_556_126_370_201.0,
+    ]);
+});
