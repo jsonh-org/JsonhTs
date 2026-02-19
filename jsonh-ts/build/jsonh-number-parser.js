@@ -121,25 +121,21 @@ class JsonhNumberParser {
         if (whole.isError) {
             return whole;
         }
-        let fraction = this.#parseWholeNumber(fractionPart, baseDigits);
-        if (fraction.isError) {
-            return fraction;
-        }
-        // Get fraction leading zeroes
-        let fractionLeadingZeroes = "";
-        for (let index = 0; index < fractionPart.length; index++) {
-            let char = fractionPart.at(index);
-            if (char === '0') {
-                fractionLeadingZeroes += '0';
+        // Add each column of fraction digits
+        let fraction = 0;
+        for (let index = fractionPart.length - 1; index >= 0; index--) {
+            // Get current digit
+            let digitChar = fractionPart.at(index);
+            let digitInt = baseDigits.indexOf(digitChar.toLowerCase());
+            // Ensure digit is valid
+            if (digitInt < 0) {
+                return Result.fromError(new Error(`Invalid digit: '${digitChar}'`));
             }
-            else {
-                break;
-            }
+            // Add value of column
+            fraction = (fraction + digitInt) / baseDigits.length;
         }
         // Combine whole and fraction
-        let whole_digits = BigInt(whole.value).toString();
-        let fraction_digits = BigInt(fraction.value).toString();
-        return Result.fromValue(Number.parseFloat(whole_digits + '.' + fractionLeadingZeroes + fraction_digits));
+        return Result.fromValue(whole.value + fraction);
     }
     /**
      * Converts a whole number (e.g. `12345`) from the given base (e.g. `01234567`) to a base-10 integer.

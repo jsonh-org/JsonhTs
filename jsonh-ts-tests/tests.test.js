@@ -501,14 +501,22 @@ test("JoinCrLfInMultiQuotedStringTest", () => {
 
 test("MassiveNumbersTest", () => {
     let jsonh = `
-    [
-        0x999_999_999_999_999_999_999_999,
-        0x999_999_999_999_999_999_999_999.0,
-    ]
-    `;
+[
+    0x999_999_999_999_999_999_999_999,
+    0x999_999_999_999_999_999_999_999.0,
+]
+`;
 
     expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual([
         47_536_897_508_558_602_556_126_370_201.0,
         47_536_897_508_558_602_556_126_370_201.0,
     ]);
+});
+
+test("FractionalHexadecimalNumbersTest", () => {
+    let jsonh = `
+[0xA.A, 0xA.A1]
+`;
+
+    expect(JsonhReader.parseElementFromString(jsonh).value).toStrictEqual([10.625, 10.62890625]);
 });
