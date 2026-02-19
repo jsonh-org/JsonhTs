@@ -151,8 +151,8 @@ class JsonhNumberParser {
         }
 
         // Combine whole and fraction
-        let whole_digits: String = whole.value.toLocaleString("en-US", { useGrouping: false });
-        let fraction_digits: String = fraction.value.toLocaleString("en-US", { useGrouping: false });
+        let whole_digits: String = BigInt(whole.value).toString();
+        let fraction_digits: String = BigInt(fraction.value).toString();
         return Result.fromValue(Number.parseFloat(whole_digits + '.' + fractionLeadingZeroes + fraction_digits));
     }
     /**
