@@ -187,12 +187,8 @@ class JsonhNumberParser {
                 return Result.fromError(new Error(`Invalid digit: '${digitChar}'`));
             }
 
-            // Get magnitude of current digit column
-            let columnNumber: number = digits.length - 1 - index;
-            let columnMagnitude: number = baseDigits.length ** columnNumber;
-
             // Add value of column
-            integer += digitInt * columnMagnitude;
+            integer = (integer * baseDigits.length) + digitInt;
         }
 
         // Apply sign
