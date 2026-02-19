@@ -193,13 +193,18 @@ test("ParseSingleElementTest", () => {
 
 test("BigNumbersTest", () => {
     let jsonh = `
-[3.5, 1e99999]
+[
+    3.5,
+    1e99999,
+    999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+]
 `;
     let element = JsonhReader.parseElementFromString(jsonh).value;
 
-    expect(element.length).toBe(2);
+    expect(element.length).toBe(3);
     expect(element[0]).toBe(3.5);
     expect(element[1]).toBe(Infinity);
+    expect(element[2]).toBe(Infinity);
 });
 
 test("MaxDepthTest", () => {
