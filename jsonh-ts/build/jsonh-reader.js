@@ -258,7 +258,7 @@ class JsonhReader {
      *
      * The result is not safe to embed in HTML.
      */
-    parseJson(includeComments, indent = null) {
+    parseJson(includeComments = false, indent = null) {
         let currentDepth = 0;
         let isStartOfStructure = true;
         let isPropertyValue = false;

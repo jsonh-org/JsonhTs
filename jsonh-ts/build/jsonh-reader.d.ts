@@ -56,7 +56,7 @@ declare class JsonhReader {
      *
      * The result is not safe to embed in HTML.
      */
-    parseJson(includeComments: boolean, indent?: string | null): Result<string>;
+    parseJson(includeComments?: boolean, indent?: string | null): Result<string>;
     /**
      * Tries to find the given property name in the reader.
      * For example, to find `c`:
