@@ -274,7 +274,7 @@ class JsonhReader {
                 // Add comma before property/item
                 if ((token.jsonType !== JsonTokenType.None && token.jsonType !== JsonTokenType.Comment) && currentDepth > 0 && !isStartOfStructure) {
                     // Don't add trailing comma
-                    if (token.jsonType != JsonTokenType.EndObject && token.jsonType !== JsonTokenType.EndArray) {
+                    if (token.jsonType !== JsonTokenType.EndObject && token.jsonType !== JsonTokenType.EndArray) {
                         resultBuilder += ',';
                     }
                 }

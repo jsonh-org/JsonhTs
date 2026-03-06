@@ -269,9 +269,9 @@ class JsonhReader {
      * The result is not safe to embed in HTML.
      */
     parseJson(includeComments: boolean, indent: string | null = null): Result<string> {
-        let currentDepth = 0;
-        let isStartOfStructure = true;
-        let isPropertyValue = false;
+        let currentDepth: number = 0;
+        let isStartOfStructure: boolean = true;
+        let isPropertyValue: boolean = false;
 
         let resultBuilder: string = "";
 
@@ -287,7 +287,7 @@ class JsonhReader {
                 // Add comma before property/item
                 if ((token.jsonType !== JsonTokenType.None && token.jsonType !== JsonTokenType.Comment) && currentDepth > 0 && !isStartOfStructure) {
                     // Don't add trailing comma
-                    if (token.jsonType != JsonTokenType.EndObject && token.jsonType !== JsonTokenType.EndArray) {
+                    if (token.jsonType !== JsonTokenType.EndObject && token.jsonType !== JsonTokenType.EndArray) {
                         resultBuilder += ',';
                     }
                 }
