@@ -79,7 +79,7 @@ let element = JsonhReader.parseElementFromString(jsonh).value;
 ## Dependencies
 
 - ES2022
-- [vitest-dev/vitest](https://github.com/vitest-dev/vitest) (v4.0.10)
+- [vitest-dev/vitest](https://github.com/vitest-dev/vitest) (v4.0.18)
 
 ## Limitations
 
