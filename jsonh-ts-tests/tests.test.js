@@ -51,6 +51,69 @@ test("NestableBlockCommentTest", () => {
     expect(tokens[4].value.value).toBe("0");
 });
 
+test("FindPropertyValueTest", () => {
+    let jsonh = `
+// Original position
+{
+  "a": "1",
+  "b": {
+    "c": "2"
+  },
+  "c":/* Final position */ "3"
+}
+`;
+    let reader = JsonhReader.fromString(jsonh);
+
+    expect(reader.findPropertyValue("c")).toBe(true);
+    expect(reader.parseElement().value).toBe("3");
+});
+
+test("ParseJsonTest", () => {
+    let jsonh = `
+{
+  // Hello /* test */ world
+  a: 'b'
+  "c": '''私'''
+  x: [a,b,c]
+  y: {}
+  z: 0.05e1
+}
+`;
+
+    let reader = JsonhReader.fromString(jsonh);
+    expect(reader.parseJson().value).toBe(`{"a":"b","c":"私","x":["a","b","c"],"y":{},"z":0.5}`);
+
+    let reader2 = JsonhReader.fromString(jsonh);
+    expect(reader2.parseJson(true).value).toBe(`{/* Hello / * test * / world*/"a":"b","c":"私","x":["a","b","c"],"y":{},"z":0.5}`);
+
+    let reader3 = JsonhReader.fromString(jsonh);
+    expect(reader3.parseJson(false, "  ").value).toBe(`{
+  "a": "b",
+  "c": "私",
+  "x": [
+    "a",
+    "b",
+    "c"
+  ],
+  "y": {},
+  "z": 0.5
+}`);
+
+    let reader4 = JsonhReader.fromString(jsonh);
+    expect(reader4.parseJson(true, "  ").value).toBe(`{
+  /* Hello / * test * / world*/
+  "a": "b",
+  "c": "私",
+  "x": [
+    "a",
+    "b",
+    "c"
+  ],
+  "y": {},
+  "z": 0.5
+}`);
+});
+
 /*
     Parse Tests
 */

@@ -48,6 +48,16 @@ declare class JsonhReader {
      */
     parseElement<T = unknown>(): Result<T>;
     /**
+     * Parses a single element as JSON from the reader.
+     *
+     * If {@link includeComments} is true, comments are included (block comments are escaped as `/ *` and `* /`).
+     *
+     * If {@link indent} is not null, the output is pretty-printed with the given indentation.
+     *
+     * The result is not safe to embed in HTML.
+     */
+    parseJson(includeComments: boolean, indent?: string | null): Result<string>;
+    /**
      * Tries to find the given property name in the reader.
      * For example, to find `c`:
      * ```

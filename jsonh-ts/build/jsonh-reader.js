@@ -250,6 +250,169 @@ class JsonhReader {
         return nextElement;
     }
     /**
+     * Parses a single element as JSON from the reader.
+     *
+     * If {@link includeComments} is true, comments are included (block comments are escaped as `/ *` and `* /`).
+     *
+     * If {@link indent} is not null, the output is pretty-printed with the given indentation.
+     *
+     * The result is not safe to embed in HTML.
+     */
+    parseJson(includeComments, indent = null) {
+        let currentDepth = 0;
+        let isStartOfStructure = true;
+        let isPropertyValue = false;
+        let resultBuilder = "";
+        for (let tokenResult of this.readElement()) {
+            // Check error
+            if (tokenResult.isError) {
+                return Result.fromError(tokenResult.error);
+            }
+            let token = tokenResult.value;
+            // Add comments and indents
+            if (!isPropertyValue) {
+                // Add comma before property/item
+                if ((token.jsonType !== JsonTokenType.None && token.jsonType !== JsonTokenType.Comment) && currentDepth > 0 && !isStartOfStructure) {
+                    // Don't add trailing comma
+                    if (token.jsonType != JsonTokenType.EndObject && token.jsonType !== JsonTokenType.EndArray) {
+                        resultBuilder += ',';
+                    }
+                }
+                // Apply indentation
+                if (indent !== null) {
+                    // Don't indent inside empty structures
+                    if (!((token.jsonType === JsonTokenType.EndObject || token.jsonType === JsonTokenType.EndArray) && isStartOfStructure)) {
+                        // Don't indent comment if not included
+                        if (!(token.jsonType === JsonTokenType.Comment && !includeComments)) {
+                            // Don't indent root elements
+                            if (currentDepth > 0) {
+                                // Add newline before element
+                                resultBuilder += '\n';
+                                // Get current indent count
+                                let indentCount = currentDepth;
+                                if (token.jsonType === JsonTokenType.EndObject || token.jsonType === JsonTokenType.EndArray) {
+                                    indentCount--;
+                                }
+                                // Add indent
+                                for (let counter = 0; counter < indentCount; counter++) {
+                                    resultBuilder += indent;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Track start of structure to avoid adding leading comma
+            if (token.jsonType !== JsonTokenType.None && token.jsonType !== JsonTokenType.Comment) {
+                isStartOfStructure = false;
+            }
+            if (token.jsonType === JsonTokenType.StartObject || token.jsonType === JsonTokenType.StartArray) {
+                isStartOfStructure = true;
+            }
+            switch (token.jsonType) {
+                // Null
+                case JsonTokenType.Null: {
+                    resultBuilder += "null";
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // True
+                case JsonTokenType.True: {
+                    resultBuilder += "true";
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // False
+                case JsonTokenType.False: {
+                    resultBuilder += "false";
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // String
+                case JsonTokenType.String: {
+                    resultBuilder += JSON.stringify(token.value);
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // Number
+                case JsonTokenType.Number: {
+                    let result = JsonhNumberParser.parse(tokenResult.value.value);
+                    if (result.isError) {
+                        return Result.fromError(result.error);
+                    }
+                    resultBuilder += result.value.toString();
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // Start Object
+                case JsonTokenType.StartObject: {
+                    resultBuilder += '{';
+                    currentDepth++;
+                    break;
+                }
+                // Start Array
+                case JsonTokenType.StartArray: {
+                    resultBuilder += '[';
+                    currentDepth++;
+                    break;
+                }
+                // End Object
+                case JsonTokenType.EndObject: {
+                    resultBuilder += '}';
+                    currentDepth--;
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // End Array
+                case JsonTokenType.EndArray: {
+                    resultBuilder += ']';
+                    currentDepth--;
+                    if (currentDepth === 0) {
+                        return Result.fromValue(resultBuilder);
+                    }
+                    break;
+                }
+                // Property Name
+                case JsonTokenType.PropertyName: {
+                    resultBuilder += JSON.stringify(token.value);
+                    resultBuilder += ':';
+                    if (indent !== null) {
+                        resultBuilder += ' ';
+                    }
+                    break;
+                }
+                // Comment
+                case JsonTokenType.Comment: {
+                    if (includeComments) {
+                        resultBuilder += "/*";
+                        resultBuilder += token.value.replaceAll("/*", "/ *").replaceAll("*/", "* /");
+                        resultBuilder += "*/";
+                    }
+                    break;
+                }
+                // Not implemented
+                default: {
+                    return Result.fromError(new Error("Token type not implemented"));
+                }
+            }
+            isPropertyValue = token.jsonType === JsonTokenType.PropertyName;
+        }
+        // End of input
+        return Result.fromError(new Error("Expected token, got end of input"));
+    }
+    /**
      * Tries to find the given property name in the reader.
      * For example, to find `c`:
      * ```
