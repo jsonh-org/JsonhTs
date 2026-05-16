@@ -54,7 +54,7 @@ declare class JsonhReader {
      *
      * If {@link indent} is not null, the output is pretty-printed with the given indentation.
      *
-     * The result is not safe to embed in HTML.
+     * Note: The result is **NOT** safe to embed in HTML. To safely embed in HTML, you need to escape characters like `<`, `>` and `&`.
      */
     parseJson(includeComments?: boolean, indent?: string | null): Result<string>;
     /**
