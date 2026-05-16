@@ -426,7 +426,9 @@ class JsonhReader {
                     }
                 }
 
-                isPropertyValue = token.jsonType === JsonTokenType.PropertyName;
+                if (token.jsonType !== JsonTokenType.Comment) {
+                    isPropertyValue = token.jsonType === JsonTokenType.PropertyName;
+                }
             }
 
             // End of input

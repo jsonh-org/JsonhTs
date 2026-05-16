@@ -408,7 +408,9 @@ class JsonhReader {
                         return Result.fromError(new Error("Token type not implemented"));
                     }
                 }
-                isPropertyValue = token.jsonType === JsonTokenType.PropertyName;
+                if (token.jsonType !== JsonTokenType.Comment) {
+                    isPropertyValue = token.jsonType === JsonTokenType.PropertyName;
+                }
             }
             // End of input
             return Result.fromError(new Error("Expected token, got end of input"));

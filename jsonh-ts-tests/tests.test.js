@@ -305,6 +305,15 @@ test("ParseJsonTest", () => {
         parseSingleElement: true,
     }));
     expect(reader6.parseJson().isError).toBe(true);
+
+    let jsonh3 = `
+a: /*b*/ c
+`;
+
+    let reader7 = JsonhReader.fromString(jsonh3, new JsonhReaderOptions({
+        parseSingleElement: false,
+    }));
+    expect(reader7.parseJson().value).toBe("{\"a\":\"c\"}");
 });
 
 /*
