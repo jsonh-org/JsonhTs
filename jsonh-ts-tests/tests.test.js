@@ -68,52 +68,6 @@ test("FindPropertyValueTest", () => {
     expect(reader.parseElement().value).toBe("3");
 });
 
-test("ParseJsonTest", () => {
-    let jsonh = `
-{
-  // Hello /* test */ world
-  a: 'b'
-  "c": '''私'''
-  x: [a,b,c]
-  y: {}
-  z: 0.05e1
-}
-`;
-
-    let reader = JsonhReader.fromString(jsonh);
-    expect(reader.parseJson().value).toBe(`{"a":"b","c":"私","x":["a","b","c"],"y":{},"z":0.5}`);
-
-    let reader2 = JsonhReader.fromString(jsonh);
-    expect(reader2.parseJson(true).value).toBe(`{/* Hello / * test * / world*/"a":"b","c":"私","x":["a","b","c"],"y":{},"z":0.5}`);
-
-    let reader3 = JsonhReader.fromString(jsonh);
-    expect(reader3.parseJson(false, "  ").value).toBe(`{
-  "a": "b",
-  "c": "私",
-  "x": [
-    "a",
-    "b",
-    "c"
-  ],
-  "y": {},
-  "z": 0.5
-}`);
-
-    let reader4 = JsonhReader.fromString(jsonh);
-    expect(reader4.parseJson(true, "  ").value).toBe(`{
-  /* Hello / * test * / world*/
-  "a": "b",
-  "c": "私",
-  "x": [
-    "a",
-    "b",
-    "c"
-  ],
-  "y": {},
-  "z": 0.5
-}`);
-});
-
 /*
     Parse Tests
 */
@@ -290,6 +244,67 @@ test("MaxDepthTest", () => {
     expect(JsonhReader.parseElementFromString(jsonh, new JsonhReaderOptions({
         maxDepth: 3,
     })).isError).toBe(false);
+});
+
+test("ParseJsonTest", () => {
+    let jsonh = `
+{
+  // Hello /* test */ world
+  a: 'b'
+  "c": '''私'''
+  x: [a,b,c]
+  y: {}
+  z: 0.05e1
+}
+`;
+
+    let reader = JsonhReader.fromString(jsonh);
+    expect(reader.parseJson().value).toBe(`{"a":"b","c":"私","x":["a","b","c"],"y":{},"z":0.5}`);
+
+    let reader2 = JsonhReader.fromString(jsonh);
+    expect(reader2.parseJson(true).value).toBe(`{/* Hello / * test * / world*/"a":"b","c":"私","x":["a","b","c"],"y":{},"z":0.5}`);
+
+    let reader3 = JsonhReader.fromString(jsonh);
+    expect(reader3.parseJson(false, "  ").value).toBe(`{
+  "a": "b",
+  "c": "私",
+  "x": [
+    "a",
+    "b",
+    "c"
+  ],
+  "y": {},
+  "z": 0.5
+}`);
+
+    let reader4 = JsonhReader.fromString(jsonh);
+    expect(reader4.parseJson(true, "  ").value).toBe(`{
+  /* Hello / * test * / world*/
+  "a": "b",
+  "c": "私",
+  "x": [
+    "a",
+    "b",
+    "c"
+  ],
+  "y": {},
+  "z": 0.5
+}`);
+
+    let jsonh2 = `
+1
+2
+`;
+
+    let reader5 = JsonhReader.fromString(jsonh2, new JsonhReaderOptions({
+        parseSingleElement: false,
+    }));
+    expect(reader5.parseJson().value).toBe("1");
+
+    let reader6 = JsonhReader.fromString(jsonh2, new JsonhReaderOptions({
+        parseSingleElement: true,
+    }));
+    expect(reader6.parseJson().isError).toBe(true);
 });
 
 /*
