@@ -790,15 +790,12 @@ class JsonhReader {
         // Optional comma
         this.#readOne(',');
     }
-    *#readPropertyName(string: string | null = null): Generator<Result<JsonhToken>> {
+    *#readPropertyName(): Generator<Result<JsonhToken>> {
         // String
-        if (string === null) {
-            let stringToken: Result<JsonhToken> = this.#readString();
-            if (stringToken.isError) {
-                yield stringToken;
-                return;
-            }
-            string = stringToken.value.value;
+        let stringToken: Result<JsonhToken> = this.#readString();
+        if (stringToken.isError) {
+            yield stringToken;
+            return;
         }
 
         // Comments & whitespace
@@ -817,7 +814,7 @@ class JsonhReader {
         }
 
         // End of property name
-        yield Result.fromValue(new JsonhToken(JsonTokenType.PropertyName, string));
+        yield Result.fromValue(new JsonhToken(JsonTokenType.PropertyName, stringToken.value.value));
     }
     *#readArray(): Generator<Result<JsonhToken>> {
         // Opening bracket
