@@ -743,15 +743,12 @@ class JsonhReader {
         // Optional comma
         this.#readOne(',');
     }
-    *#readPropertyName(string = null) {
+    *#readPropertyName() {
         // String
-        if (string === null) {
-            let stringToken = this.#readString();
-            if (stringToken.isError) {
-                yield stringToken;
-                return;
-            }
-            string = stringToken.value.value;
+        let stringToken = this.#readString();
+        if (stringToken.isError) {
+            yield stringToken;
+            return;
         }
         // Comments & whitespace
         for (let token of this.#readCommentsAndWhitespace()) {
@@ -767,7 +764,7 @@ class JsonhReader {
             return;
         }
         // End of property name
-        yield Result.fromValue(new JsonhToken(JsonTokenType.PropertyName, string));
+        yield Result.fromValue(new JsonhToken(JsonTokenType.PropertyName, stringToken.value.value));
     }
     *#readArray() {
         // Opening bracket
