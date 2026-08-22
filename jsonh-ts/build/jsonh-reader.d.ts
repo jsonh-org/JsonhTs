@@ -10,19 +10,19 @@ declare class JsonhReader {
     /**
      * The text reader to read characters from.
      */
-    get textReader(): TextReader;
+    textReader: TextReader;
     /**
      * The options to use when reading JSONH.
      */
-    get options(): JsonhReaderOptions;
+    options: JsonhReaderOptions;
     /**
      * The number of characters read from {@link string}.
      */
-    get charCounter(): number;
+    charCounter: number;
     /**
      * The current recursion depth of the reader.
      */
-    get depth(): number;
+    depth: number;
     /**
      * Constructs a reader that reads JSONH from a text reader.
      */

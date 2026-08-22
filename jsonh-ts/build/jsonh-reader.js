@@ -15,48 +15,24 @@ class JsonhReader {
     /**
      * The text reader to read characters from.
      */
-    #textReader;
-    /**
-     * The text reader to read characters from.
-     */
-    get textReader() {
-        return this.#textReader;
-    }
+    textReader;
     /**
      * The options to use when reading JSONH.
      */
-    #options;
-    /**
-     * The options to use when reading JSONH.
-     */
-    get options() {
-        return this.#options;
-    }
+    options;
     /**
      * The number of characters read from {@link string}.
      */
-    #charCounter;
-    /**
-     * The number of characters read from {@link string}.
-     */
-    get charCounter() {
-        return this.#charCounter;
-    }
+    charCounter;
     /**
      * The current recursion depth of the reader.
      */
-    #depth;
-    /**
-     * The current recursion depth of the reader.
-     */
-    get depth() {
-        return this.#depth;
-    }
+    depth;
     /**
      * Characters that cannot be used unescaped in quoteless strings.
      */
     get #reservedChars() {
-        return this.#options.supportsVersion(JsonhVersion.V2) ? _a.#reservedCharsV2 : _a.#reservedCharsV1;
+        return this.options.supportsVersion(JsonhVersion.V2) ? _a.#reservedCharsV2 : _a.#reservedCharsV1;
     }
     /**
      * Characters that cannot be used unescaped in quoteless strings in JSONH V1.
@@ -85,10 +61,10 @@ class JsonhReader {
         if (typeof textReader === "string") {
             throw new Error("Do not pass a string to new JsonhReader(). Use JsonhReader.fromString().");
         }
-        this.#textReader = textReader;
-        this.#options = options;
-        this.#charCounter = 0;
-        this.#depth = 0;
+        this.textReader = textReader;
+        this.options = options;
+        this.charCounter = 0;
+        this.depth = 0;
     }
     /**
      * Constructs a reader that reads JSONH from a text reader.
@@ -573,9 +549,9 @@ class JsonhReader {
         }
         // Start of object
         yield Result.fromValue(new JsonhToken(JsonTokenType.StartObject));
-        this.#depth++;
+        this.depth++;
         // Check exceeded max depth
-        if (this.#depth > this.#options.maxDepth) {
+        if (this.depth > this.options.maxDepth) {
             yield Result.fromError(new Error("Exceeded max depth"));
             return;
         }
@@ -591,8 +567,8 @@ class JsonhReader {
             let next = this.#peek();
             if (next === null) {
                 // End of incomplete object
-                if (this.#options.incompleteInputs) {
-                    this.#depth--;
+                if (this.options.incompleteInputs) {
+                    this.depth--;
                     yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                     return;
                 }
@@ -604,7 +580,7 @@ class JsonhReader {
             if (next === '}') {
                 // End of object
                 this.#read();
-                this.#depth--;
+                this.depth--;
                 yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                 return;
             }
@@ -623,9 +599,9 @@ class JsonhReader {
     *#readBracelessObject(propertyNameTokens = null) {
         // Start of object
         yield Result.fromValue(new JsonhToken(JsonTokenType.StartObject));
-        this.#depth++;
+        this.depth++;
         // Check exceeded max depth
-        if (this.#depth > this.#options.maxDepth) {
+        if (this.depth > this.options.maxDepth) {
             yield Result.fromError(new Error("Exceeded max depth"));
             return;
         }
@@ -650,7 +626,7 @@ class JsonhReader {
             }
             if (this.#peek() === null) {
                 // End of braceless object
-                this.#depth--;
+                this.depth--;
                 yield Result.fromValue(new JsonhToken(JsonTokenType.EndObject));
                 return;
             }
@@ -774,9 +750,9 @@ class JsonhReader {
         }
         // Start of array
         yield Result.fromValue(new JsonhToken(JsonTokenType.StartArray));
-        this.#depth++;
+        this.depth++;
         // Check exceeded max depth
-        if (this.#depth > this.#options.maxDepth) {
+        if (this.depth > this.options.maxDepth) {
             yield Result.fromError(new Error("Exceeded max depth"));
             return;
         }
@@ -792,8 +768,8 @@ class JsonhReader {
             let next = this.#peek();
             if (next === null) {
                 // End of incomplete array
-                if (this.#options.incompleteInputs) {
-                    this.#depth--;
+                if (this.options.incompleteInputs) {
+                    this.depth--;
                     yield Result.fromValue(new JsonhToken(JsonTokenType.EndArray));
                     return;
                 }
@@ -805,7 +781,7 @@ class JsonhReader {
             if (next === ']') {
                 // End of array
                 this.#read();
-                this.#depth--;
+                this.depth--;
                 yield Result.fromValue(new JsonhToken(JsonTokenType.EndArray));
                 return;
             }
@@ -844,7 +820,7 @@ class JsonhReader {
     #readString() {
         // Verbatim
         let isVerbatim = false;
-        if (this.#options.supportsVersion(JsonhVersion.V2) && this.#readOne('@')) {
+        if (this.options.supportsVersion(JsonhVersion.V2) && this.#readOne('@')) {
             isVerbatim = true;
             // Ensure string immediately follows verbatim symbol
             let next = this.#peek();
@@ -1279,7 +1255,7 @@ class JsonhReader {
             return this.#readNumberOrQuotelessString();
         }
         // String
-        else if (next === '"' || next === '\'' || (this.#options.supportsVersion(JsonhVersion.V2) && next === '@')) {
+        else if (next === '"' || next === '\'' || (this.options.supportsVersion(JsonhVersion.V2) && next === '@')) {
             return this.#readString();
         }
         // Quoteless string (or named literal)
@@ -1326,7 +1302,7 @@ class JsonhReader {
                 blockComment = true;
             }
             // Nestable block-style comment
-            else if (this.#options.supportsVersion(JsonhVersion.V2) && this.#peek() === '=') {
+            else if (this.options.supportsVersion(JsonhVersion.V2) && this.#peek() === '=') {
                 blockComment = true;
                 while (this.#readOne('=')) {
                     startNestCounter++;
@@ -1355,7 +1331,7 @@ class JsonhReader {
                 // End of block comment
                 if (next === '*') {
                     // End of nestable block comment
-                    if (this.#options.supportsVersion(JsonhVersion.V2)) {
+                    if (this.options.supportsVersion(JsonhVersion.V2)) {
                         // Count nests
                         let endNestCounter = 0;
                         while (endNestCounter < startNestCounter && this.#readOne('=')) {
@@ -1512,18 +1488,18 @@ class JsonhReader {
         }
     }
     #peek() {
-        let next = this.#textReader.peek();
+        let next = this.textReader.peek();
         if (next === null) {
             return null;
         }
         return next;
     }
     #read() {
-        let next = this.#textReader.read();
+        let next = this.textReader.read();
         if (next === null) {
             return null;
         }
-        this.#charCounter++;
+        this.charCounter++;
         return next;
     }
     #readOne(option) {
