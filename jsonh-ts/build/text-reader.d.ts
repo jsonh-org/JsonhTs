@@ -1,3 +1,6 @@
+/**
+ * An abstraction for reading UTF-16 characters incrementally.
+ */
 declare abstract class TextReader {
     /**
      * Returns the next character and increments the position, or returns null.

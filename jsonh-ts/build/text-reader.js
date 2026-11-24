@@ -1,4 +1,7 @@
 "use strict";
+/**
+ * An abstraction for reading UTF-16 characters incrementally.
+ */
 class TextReader {
     /**
      * Returns all of the remaining characters.
