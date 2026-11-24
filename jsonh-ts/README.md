@@ -60,7 +60,7 @@ let jsonh: string = `
     this is: awesome
 }
 `;
-let element: string = JsonhReader.parseElementFromString<string>(jsonh).value;
+let element: object = JsonhReader.parseElementFromString<object>(jsonh).value;
 ```
 
 ```js
@@ -79,7 +79,10 @@ let element = JsonhReader.parseElementFromString(jsonh).value;
 ## Dependencies
 
 - ES2022
-- [vitest-dev/vitest](https://github.com/vitest-dev/vitest) (v3.2.4)
+
+### Test/Development Dependencies
+
+- [vitest-dev/vitest](https://github.com/vitest-dev/vitest)
 
 ## Limitations
 
